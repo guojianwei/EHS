@@ -589,7 +589,34 @@ class Ensemble {
 	   		+ "smoting = 1\n";
 	   Files.writeFile(filename, output);	   
    }
-   
+   /**
+    * Creates a configuration file for the EHS-CHC approach. Qstat + GM approach
+    * @param filename
+    */
+   private void createConf_EHS(String filename){
+	   String output = new String("algorithm = IS Methods\n");
+	   output += "inputData = \" "+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"training2.txt\" \""+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4)+"training2.txt\" \"tst.dat\"\n"
+	   		+ "outputData = \"training.txt\" \"tstOutput.dat\"\n\n"
+	   		+ "Seed = 564545456\n"
+	   		+ "Population Size = 50\n"
+	   		+ "Number of Evaluations = 10000\n"
+	   		+ "Percentage of Change in restart = 0.35\n"
+	   		+ "0-1 in restart = 0.25\n"
+	   		+ "0-1 in diverge = 0.25\n"
+	   		+ "wrapper = k-NN\n"
+	   		+ "Number of Neighbors = 1\n"
+	   		+ "Distance Function = Euclidean\n"
+	   		+ "evMeasure = geometric mean\n"
+	   		+ "majSelection = no_majority_selection\n"
+	   		+ "EBUS = EBUS\n"
+	   		+ "P = 0.2\n"
+	   		+ "hybrid = ehs\n"
+	   		+ "kSMOTE = 5\n"
+	   		+ "ASMO = both\n"
+	   		+ "balance = YES\n"
+	   		+ "smoting = 1\n";
+	   Files.writeFile(filename, output);	   
+   }
    /** Preparation of the data-set for RUSBoost
     *   The data-set is resampled and the weight distribution is changed 
     *   in order to form a distribution with the remaining weights
@@ -654,14 +681,10 @@ class Ensemble {
              }
       }else  if (ensembleType.equalsIgnoreCase("EOERUSBOOST")) { //Only
     	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
-    	  int kSMOTE = Integer.parseInt(classifier.parameters.getParameter(8));
-    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(9));
-    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
-    	    System.out.println("Cp:" + Cp );
 
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
-          createConf(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           m = new EOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           fm.delete();

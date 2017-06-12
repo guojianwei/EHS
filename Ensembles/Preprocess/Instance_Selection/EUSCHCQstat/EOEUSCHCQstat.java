@@ -131,7 +131,7 @@ public class EOEUSCHCQstat extends Metodo {
 		boolean nulosArt[][];
 		int clasesArt[];
 		int tamS;
-
+		int chromeSize;
 		long tiempo = System.currentTimeMillis();
 
 		// Randomize.setSeed (semilla);
@@ -179,7 +179,37 @@ public class EOEUSCHCQstat extends Metodo {
 					datosArt, realArt, nominalArt, nulosArt, clasesArt, kSMOTE,
 					ASMO, smoting, balance, nPos, posID, nNeg, negID,
 					distanceEu);
-		} else {
+		} else if (hybrid.equalsIgnoreCase("ehs")) {
+			/*
+			 * negtive sample as left, positive right*/
+			datosArt = new double[datosTrain.length][datosTrain[0].length];
+			realArt = new double[datosTrain.length][datosTrain[0].length];
+			nominalArt = new int[datosTrain.length][datosTrain[0].length];
+			nulosArt = new boolean[datosTrain.length][datosTrain[0].length];
+			clasesArt = new int[clasesTrain.length];
+			for (i = 0; i < datosTrain.length; i++) {
+				if(clasesTrain[i] == negID){
+					for (j = 0; j < datosTrain[i].length; j++) {
+						datosArt[i][j] = datosTrain[i][j];
+						realArt[i][j] = realTrain[i][j];
+						nominalArt[i][j] = nominalTrain[i][j];
+						nulosArt[i][j] = nulosTrain[i][j];
+					}
+					clasesArt[i] = clasesTrain[i];
+				}
+			}
+			for (i = 0; i < datosTrain.length; i++) {
+				if(clasesTrain[i] == posID){
+					for (j = 0; j < datosTrain[i].length; j++) {
+						datosArt[i][j] = datosTrain[i][j];
+						realArt[i][j] = realTrain[i][j];
+						nominalArt[i][j] = nominalTrain[i][j];
+						nulosArt[i][j] = nulosTrain[i][j];
+					}
+					clasesArt[i] = clasesTrain[i];
+				}
+			}
+		}else{
 			datosArt = new double[datosTrain.length][datosTrain[0].length];
 			realArt = new double[datosTrain.length][datosTrain[0].length];
 			nominalArt = new int[datosTrain.length][datosTrain[0].length];
@@ -205,11 +235,14 @@ public class EOEUSCHCQstat extends Metodo {
 				nNeg++;
 		}
 
-		if (majSelection)
+		if (majSelection) //true
 			d = nNeg / 4;
 		else
 			d = datosArt.length / 4;
-
+		
+		chromeSize = (nNeg + nPos*3);
+		d = chromeSize / 4;
+		
 		/* Random initialization of the population */
 		poblacion = new EOChromosome[popSize];
 		baraje = new int[popSize];
@@ -217,7 +250,7 @@ public class EOEUSCHCQstat extends Metodo {
 			if (majSelection)
 				poblacion[i] = new EOChromosome(nNeg);
 			else
-				poblacion[i] = new EOChromosome(datosArt.length);
+				poblacion[i] = new EOChromosome(chromeSize);
 
 		/* Initial evaluation of the population */
 		for (i = 0; i < popSize; i++)
@@ -244,7 +277,7 @@ public class EOEUSCHCQstat extends Metodo {
 				if (majSelection)
 					C[i] = new EOChromosome(nNeg, poblacion[baraje[i]]);
 				else
-					C[i] = new EOChromosome(datosArt.length, poblacion[baraje[i]]);
+					C[i] = new EOChromosome(chromeSize, poblacion[baraje[i]]);
 
 			/* Structure recombination in C(t) constructing C'(t) */
 			tamC = recombinar(C, d, nNeg, nPos, majSelection);
@@ -255,7 +288,7 @@ public class EOEUSCHCQstat extends Metodo {
 					if (majSelection)
 						newPob[l] = new EOChromosome(nNeg, C[i]);
 					else
-						newPob[l] = new EOChromosome(datosArt.length, C[i]);
+						newPob[l] = new EOChromosome(chromeSize, C[i]);
 					l++;
 				}
 			}
@@ -265,7 +298,7 @@ public class EOEUSCHCQstat extends Metodo {
 				newPob[i].evalua(datosTrain, realTrain, nominalTrain,
 						nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 						nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
-						pFactor, P, posID, nPos, distanceEu, entradas,
+						pFactor, P, posID, nPos,negID, nNeg,distanceEu, entradas,
 						anteriores, salidasAnteriores);
 				ev++;
 			}
@@ -288,14 +321,14 @@ public class EOEUSCHCQstat extends Metodo {
 						if (majSelection)
 							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
 						else
-							pobTemp[i] = new EOChromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(chromeSize,
 									poblacion[j]);
 						j++;
 					} else {
 						if (majSelection)
 							pobTemp[i] = new EOChromosome(nNeg, newPob[l]);
 						else
-							pobTemp[i] = new EOChromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(chromeSize,
 									newPob[l]);
 						l++;
 					}
@@ -305,7 +338,7 @@ public class EOEUSCHCQstat extends Metodo {
 						if (majSelection)
 							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
 						else
-							pobTemp[i] = new EOChromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(chromeSize,
 									poblacion[j]);
 						j++;
 					}
@@ -324,7 +357,7 @@ public class EOEUSCHCQstat extends Metodo {
 								nominalTrain, nulosTrain, clasesTrain,
 								datosArt, realArt, nominalArt, nulosArt,
 								clasesArt, wrapper, k, evMeas, majSelection,
-								pFactor, P, posID, nPos, distanceEu, entradas,
+								pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas,
 								anteriores, salidasAnteriores);
 						ev++;
 					}
@@ -333,7 +366,7 @@ public class EOEUSCHCQstat extends Metodo {
 				if (majSelection)
 					d = (int) (r * (1.0 - r) * (double) nNeg);
 				else
-					d = (int) (r * (1.0 - r) * (double) datosArt.length);
+					d = (int) (r * (1.0 - r) * (double) chromeSize);
 			}
 		}
 
