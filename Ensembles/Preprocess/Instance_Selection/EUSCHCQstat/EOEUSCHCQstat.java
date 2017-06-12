@@ -257,7 +257,7 @@ public class EOEUSCHCQstat extends Metodo {
 			poblacion[i].evalua(datosTrain, realTrain, nominalTrain,
 					nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 					nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
-					pFactor, P, posID, nPos, distanceEu, entradas, anteriores,
+					pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas, anteriores,
 					salidasAnteriores);
 
 		/* Until stop condition */

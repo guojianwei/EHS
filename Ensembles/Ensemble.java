@@ -589,6 +589,7 @@ class Ensemble {
 	   		+ "smoting = 1\n";
 	   Files.writeFile(filename, output);	   
    }
+
    /**
     * Creates a configuration file for the EHS-CHC approach. Qstat + GM approach
     * @param filename
