@@ -55,7 +55,7 @@ import keel.Algorithms.ImbalancedClassification.Ensembles.parseParameters;
  * @version 1.1
  * @since JDK 1.5
  */
-public class EUSCHCQstat extends Metodo {
+public class EOEUSCHCQstat extends Metodo {
 
 	/* Own parameters of the algorithm */
 	private long seed;
@@ -83,7 +83,7 @@ public class EUSCHCQstat extends Metodo {
 	 * Builder with a script file (configuration file)
 	 * @param ficheroScript
 	 */
-	public EUSCHCQstat(String ficheroScript) {
+	public EOEUSCHCQstat(String ficheroScript) {
 		super(ficheroScript);
 	}
 
@@ -115,15 +115,15 @@ public class EUSCHCQstat extends Metodo {
 		boolean conjM[][];
 		int clasesS[];
 		int nSel = 0;
-		Chromosome poblacion[];
+		EOChromosome poblacion[];
 		int ev = 0;
-		Chromosome C[];
+		EOChromosome C[];
 		int baraje[];
 		int pos, tmp;
-		Chromosome newPob[];
+		EOChromosome newPob[];
 		int d;
 		int tamC;
-		Chromosome pobTemp[];
+		EOChromosome pobTemp[];
 		int nPos = 0, nNeg = 0, posID, negID;
 		double datosArt[][];
 		double realArt[][];
@@ -211,13 +211,13 @@ public class EUSCHCQstat extends Metodo {
 			d = datosArt.length / 4;
 
 		/* Random initialization of the population */
-		poblacion = new Chromosome[popSize];
+		poblacion = new EOChromosome[popSize];
 		baraje = new int[popSize];
 		for (i = 0; i < popSize; i++)
 			if (majSelection)
-				poblacion[i] = new Chromosome(nNeg);
+				poblacion[i] = new EOChromosome(nNeg);
 			else
-				poblacion[i] = new Chromosome(datosArt.length);
+				poblacion[i] = new EOChromosome(datosArt.length);
 
 		/* Initial evaluation of the population */
 		for (i = 0; i < popSize; i++)
@@ -229,7 +229,7 @@ public class EUSCHCQstat extends Metodo {
 
 		/* Until stop condition */
 		while (ev < nEval) {
-			C = new Chromosome[popSize];
+			C = new EOChromosome[popSize];
 
 			/* Selection(r) of C(t) from P(t) */
 			for (i = 0; i < popSize; i++)
@@ -242,20 +242,20 @@ public class EUSCHCQstat extends Metodo {
 			}
 			for (i = 0; i < popSize; i++)
 				if (majSelection)
-					C[i] = new Chromosome(nNeg, poblacion[baraje[i]]);
+					C[i] = new EOChromosome(nNeg, poblacion[baraje[i]]);
 				else
-					C[i] = new Chromosome(datosArt.length, poblacion[baraje[i]]);
+					C[i] = new EOChromosome(datosArt.length, poblacion[baraje[i]]);
 
 			/* Structure recombination in C(t) constructing C'(t) */
 			tamC = recombinar(C, d, nNeg, nPos, majSelection);
-			newPob = new Chromosome[tamC];
+			newPob = new EOChromosome[tamC];
 			for (i = 0, l = 0; i < C.length; i++) {
 				if (C[i].esValido()) { // the cromosome must be copied to the
 					// new poblation C'(t)
 					if (majSelection)
-						newPob[l] = new Chromosome(nNeg, C[i]);
+						newPob[l] = new EOChromosome(nNeg, C[i]);
 					else
-						newPob[l] = new Chromosome(datosArt.length, C[i]);
+						newPob[l] = new EOChromosome(datosArt.length, C[i]);
 					l++;
 				}
 			}
@@ -282,20 +282,20 @@ public class EUSCHCQstat extends Metodo {
 							.getCalidad()) {
 				d--;
 			} else {
-				pobTemp = new Chromosome[popSize];
+				pobTemp = new EOChromosome[popSize];
 				for (i = 0, j = 0, l = 0; i < popSize && l < tamC; i++) {
 					if (poblacion[j].getCalidad() > newPob[l].getCalidad()) {
 						if (majSelection)
-							pobTemp[i] = new Chromosome(nNeg, poblacion[j]);
+							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
 						else
-							pobTemp[i] = new Chromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(datosArt.length,
 									poblacion[j]);
 						j++;
 					} else {
 						if (majSelection)
-							pobTemp[i] = new Chromosome(nNeg, newPob[l]);
+							pobTemp[i] = new EOChromosome(nNeg, newPob[l]);
 						else
-							pobTemp[i] = new Chromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(datosArt.length,
 									newPob[l]);
 						l++;
 					}
@@ -303,9 +303,9 @@ public class EUSCHCQstat extends Metodo {
 				if (l == tamC) { // there are cromosomes for copying
 					for (; i < popSize; i++) {
 						if (majSelection)
-							pobTemp[i] = new Chromosome(nNeg, poblacion[j]);
+							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
 						else
-							pobTemp[i] = new Chromosome(datosArt.length,
+							pobTemp[i] = new EOChromosome(datosArt.length,
 									poblacion[j]);
 						j++;
 					}
@@ -468,7 +468,7 @@ public class EUSCHCQstat extends Metodo {
 	 * other ones who have to be removed It returns the number of remaining
 	 * cromosomes in the poblation
 	 */
-	private int recombinar(Chromosome C[], int d, int nNeg, int nPos,
+	private int recombinar(EOChromosome C[], int d, int nNeg, int nPos,
 			boolean majSelection) {
 
 		int i, j;

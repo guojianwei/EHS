@@ -47,6 +47,7 @@ import org.core.Randomize;
 import keel.Algorithms.ImbalancedClassification.Auxiliar.AUC.PredPair;
 
 import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Instance_Selection.EUSCHCQstat.EUSCHCQstat;
+import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Instance_Selection.EUSCHCQstat.EOEUSCHCQstat;
 
 /**
  * <p>Title: Ensemble</p>
@@ -628,6 +629,68 @@ class Ensemble {
              m2 = (EUSCHCQstat)m;
              anteriores[t] = m2.getBest().clone();
              salidasAnteriores[t] = m2.getBestOutputs().clone();
+             m = null;
+
+             selected = new int[actualDS.getnData()];
+             Arrays.fill(selected, -1);
+             boolean[] aux = new boolean[originalDS.getnData()];
+             Arrays.fill(aux, false);
+             for (int i = 0; i < actualDS.getnData(); i++) {
+            	 double[] ej1 = actualDS.getExample(i);
+            	 for (int j = 0; j < originalDS.getnData(); j++) {
+            		 if (aux[j] == true)
+            			 continue;
+            		 double[] ej2 = originalDS.getExample(j);
+            		 boolean fin = false;
+            		 for (int k = 0; k < ej1.length && !fin; k++) {
+            			 if (ej1[k] != ej2[k])
+            				 fin = true;
+            		 }
+            		 if (fin == false) {
+            			 selected[i] = j;
+            			 aux[j] = true;
+            		 }
+            	 }
+             }
+      }else  if (ensembleType.equalsIgnoreCase("EOERUSBOOST")) { //Only
+    	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
+    	  int kSMOTE = Integer.parseInt(classifier.parameters.getParameter(8));
+    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(9));
+    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
+    	    System.out.println("Cp:" + Cp );
+
+    	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
+          Metodo m = null;
+          createConf(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          m = new EOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          fm.delete();
+          EOEUSCHCQstat m2 = (EOEUSCHCQstat)m;
+          m2.setAnteriores(anteriores);
+          m2.setSalidasAnteriores(salidasAnteriores);
+          
+          m.runAlgorithm();
+          m.run();
+
+          try {
+        //        originalDS.getIS().setAttributesAsNonStatic();
+            	/*actualDS the samples selected by the EUS*/
+               /* Read the preprocessed data-set */
+             actualDS = new myDataset();
+             actualDS.readClassificationSet(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training.txt", false);
+           }catch (IOException e) {
+             System.err.println("There was a problem while reading the input preprocessed data-sets: " + e);
+           }
+            
+             File f = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training.txt");
+             File f2 = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt");
+             f.delete();
+             f2.delete();
+            
+             m2 = (EOEUSCHCQstat)m;
+             anteriores[t] = m2.getBest().clone();
+             salidasAnteriores[t] = m2.getBestOutputs().clone();
+   
              m = null;
 
              selected = new int[actualDS.getnData()];
