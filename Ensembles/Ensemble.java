@@ -135,6 +135,7 @@ class Ensemble {
    
    boolean[][] anteriores;
    boolean[][] salidasAnteriores;
+   int[] miCluster;
    
    int nClassifierCounter;
    
@@ -691,7 +692,8 @@ class Ensemble {
           fm.delete();
           EOEUSCHCQstat m2 = (EOEUSCHCQstat)m;
           m2.setAnteriores(anteriores);
-          m2.setSalidasAnteriores(salidasAnteriores);
+          m2.setSalidasAnteriores(salidasAnteriores);   
+          m2.setCluster(miCluster);
           
           m.runAlgorithm();
           m.run();
@@ -714,7 +716,8 @@ class Ensemble {
              m2 = (EOEUSCHCQstat)m;
              anteriores[t] = m2.getBest().clone();
              salidasAnteriores[t] = m2.getBestOutputs().clone();
-   
+             miCluster = m2.getCluster();
+
              m = null;
 
              selected = new int[actualDS.getnData()];

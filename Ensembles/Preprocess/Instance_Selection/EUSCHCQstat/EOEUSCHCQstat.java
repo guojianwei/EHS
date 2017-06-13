@@ -78,6 +78,8 @@ public class EOEUSCHCQstat extends Metodo {
 	private int bitWidth;
 	private boolean anteriores[][], salidasAnteriores[][];
 	private boolean[] best, bestOutputs;
+	private int minorCluster[];
+	private double cp;
 
 	/**
 	 * Builder with a script file (configuration file)
@@ -85,6 +87,12 @@ public class EOEUSCHCQstat extends Metodo {
 	 */
 	public EOEUSCHCQstat(String ficheroScript) {
 		super(ficheroScript);
+	}
+	public void setCluster(int[] minorCluster) {
+		this.minorCluster = minorCluster;
+	}
+	public int[]  getCluster() {
+		return this.minorCluster;
 	}
 
 	public void setAnteriores(boolean[][] anteriores) {
@@ -245,7 +253,10 @@ public class EOEUSCHCQstat extends Metodo {
 		
 		chromeSize = (nNeg + nPos*bitWidth);
 		d = chromeSize / 4;
-		
+		if(this.minorCluster==null)
+		{
+			calcLocalInfo(datosArt, realArt, nominalArt, nulosArt, clasesArt, nPos, nNeg, posID, negID);
+		}
 		/* Random initialization of the population */
 		poblacion = new EOChromosome[popSize];
 		baraje = new int[popSize];
@@ -518,6 +529,37 @@ public class EOEUSCHCQstat extends Metodo {
 		// nEntradas, relation);
 	}
 
+	/**
+	 * run a hierarchical cluster to find the positives clusters
+	 */
+	private void calcLocalInfo(double[][] datosTrain, double[][] realTrain, int[][] nominalTrain,
+			boolean[][] nulosTrain, int[] clasesTrain, int nPos, int nNeg, int posID, int negID) {
+
+		/*
+		 * kSMOTE how many majsamples near a minor*/
+		/*Localize the positive instances*/
+		this.minorCluster = new int[datosTrain.length];
+	    int positives[];
+	    int i, j;
+	    positives = new int[nPos];
+	    for (i=0, j=0; i<clasesTrain.length; i++) {
+	      if (clasesTrain[i] == posID) {
+	        positives[j] = i;
+	        j++;
+	      }
+	    }
+	    double posPoints[][] = new double[nPos][datosTrain[0].length];
+	    for(i=0; i<positives.length; i++){
+	    	for(j=0; j<datosTrain[i].length; j++)
+	    		posPoints[i][j] = datosTrain[positives[i]][j]; //realTrain
+	    }
+	    HierarchicalClustering hc = new HierarchicalClustering();
+	    int posCs[] = new int[posPoints.length];
+	    hc.HClustering(posPoints, posCs, this.cp);
+	    for(i=0; i<positives.length; i++){
+	    	this.minorCluster[positives[i]] = positives[posCs[i]];
+	    }
+	}
 	/**
 	 * Function that determines the cromosomes who have to be crossed and the
 	 * other ones who have to be removed It returns the number of remaining
