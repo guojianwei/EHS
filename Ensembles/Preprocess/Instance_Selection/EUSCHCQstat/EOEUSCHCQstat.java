@@ -75,7 +75,7 @@ public class EOEUSCHCQstat extends Metodo {
 	private double smoting;
 	private boolean balance;
 	private String wrapper;
-
+	private int bitWidth;
 	private boolean anteriores[][], salidasAnteriores[][];
 	private boolean[] best, bestOutputs;
 
@@ -133,7 +133,7 @@ public class EOEUSCHCQstat extends Metodo {
 		int tamS;
 		int chromeSize;
 		long tiempo = System.currentTimeMillis();
-
+		bitWidth = 2;
 		// Randomize.setSeed (semilla);
 		posID = clasesTrain[0];
 		negID = -1;
@@ -187,26 +187,29 @@ public class EOEUSCHCQstat extends Metodo {
 			nominalArt = new int[datosTrain.length][datosTrain[0].length];
 			nulosArt = new boolean[datosTrain.length][datosTrain[0].length];
 			clasesArt = new int[clasesTrain.length];
+			l = 0;
 			for (i = 0; i < datosTrain.length; i++) {
 				if(clasesTrain[i] == negID){
 					for (j = 0; j < datosTrain[i].length; j++) {
-						datosArt[i][j] = datosTrain[i][j];
-						realArt[i][j] = realTrain[i][j];
-						nominalArt[i][j] = nominalTrain[i][j];
-						nulosArt[i][j] = nulosTrain[i][j];
+						datosArt[l][j] = datosTrain[i][j];
+						realArt[l][j] = realTrain[i][j];
+						nominalArt[l][j] = nominalTrain[i][j];
+						nulosArt[l][j] = nulosTrain[i][j];
 					}
-					clasesArt[i] = clasesTrain[i];
+					clasesArt[l] = clasesTrain[i];
+					l ++;
 				}
 			}
 			for (i = 0; i < datosTrain.length; i++) {
 				if(clasesTrain[i] == posID){
 					for (j = 0; j < datosTrain[i].length; j++) {
-						datosArt[i][j] = datosTrain[i][j];
-						realArt[i][j] = realTrain[i][j];
-						nominalArt[i][j] = nominalTrain[i][j];
-						nulosArt[i][j] = nulosTrain[i][j];
+						datosArt[l][j] = datosTrain[i][j];
+						realArt[l][j] = realTrain[i][j];
+						nominalArt[l][j] = nominalTrain[i][j];
+						nulosArt[l][j] = nulosTrain[i][j];
 					}
-					clasesArt[i] = clasesTrain[i];
+					clasesArt[l] = clasesTrain[i];
+					l ++;
 				}
 			}
 		}else{
@@ -240,7 +243,7 @@ public class EOEUSCHCQstat extends Metodo {
 		else
 			d = datosArt.length / 4;
 		
-		chromeSize = (nNeg + nPos*3);
+		chromeSize = (nNeg + nPos*bitWidth);
 		d = chromeSize / 4;
 		
 		/* Random initialization of the population */
@@ -258,7 +261,7 @@ public class EOEUSCHCQstat extends Metodo {
 					nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 					nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 					pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas, anteriores,
-					salidasAnteriores);
+					salidasAnteriores,bitWidth);
 
 		/* Until stop condition */
 		while (ev < nEval) {
@@ -299,7 +302,7 @@ public class EOEUSCHCQstat extends Metodo {
 						nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 						nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 						pFactor, P, posID, nPos,negID, nNeg,distanceEu, entradas,
-						anteriores, salidasAnteriores);
+						anteriores, salidasAnteriores,bitWidth);
 				ev++;
 			}
 
@@ -358,7 +361,7 @@ public class EOEUSCHCQstat extends Metodo {
 								datosArt, realArt, nominalArt, nulosArt,
 								clasesArt, wrapper, k, evMeas, majSelection,
 								pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas,
-								anteriores, salidasAnteriores);
+								anteriores, salidasAnteriores,bitWidth);
 						ev++;
 					}
 
@@ -410,16 +413,24 @@ public class EOEUSCHCQstat extends Metodo {
 				}
 			}
 		} else {
-			nSel = poblacion[0].genesActivos();
-
+			int Nmaj = 0;				
+			for (i = 0; i < nNeg; i++) {
+				if (poblacion[0].getGen(i)) { // the instance must be copied to
+					Nmaj++;
+				}
+			}
+			nSel = Nmaj + nPos + poblacion[0].smoteTotal ;
+			System.out.println( "0000000nSel:"+nSel+" Nmaj:"+Nmaj+" nPos:"+nPos+" smoteTotal:"+poblacion[0].smoteTotal);
+			
 			/* Construction of S set from the best cromosome */
 			conjS = new double[nSel][datosArt[0].length];
 			conjR = new double[nSel][datosArt[0].length];
 			conjN = new int[nSel][datosArt[0].length];
 			conjM = new boolean[nSel][datosArt[0].length];
 			clasesS = new int[nSel];
+			
 			for (i = 0, l = 0; i < datosArt.length; i++) {
-				if (poblacion[0].getGen(i)) { // the instance must be copied to
+				if ((poblacion[0].getGen(i)||clasesArt[i] == posID)) { // the instance must be copied to
 					// the solution
 					for (j = 0; j < datosArt[i].length; j++) {
 						conjS[l][j] = datosArt[i][j];
@@ -430,6 +441,17 @@ public class EOEUSCHCQstat extends Metodo {
 					clasesS[l] = clasesArt[i];
 					l++;
 				}
+			}
+			for (i = 0; i < poblacion[0].smoteTotal; i++) {
+				// the solution
+				for (j = 0; j < poblacion[0].smoteDatosArt[i].length; j++) {
+					conjS[l][j] = poblacion[0].smoteDatosArt[i][j];
+					conjR[l][j] = poblacion[0].smoteRealArt[i][j];
+					conjN[l][j] = poblacion[0].smoteNominalArt[i][j];
+					conjM[l][j] = poblacion[0].smoteNulosArt[i][j];
+				}
+				clasesS[l] = poblacion[0].smoteClassS[i];
+				l++;				
 			}
 		}
 
@@ -512,7 +534,7 @@ public class EOEUSCHCQstat extends Metodo {
 		if (majSelection)
 			n = nNeg;
 		else
-			n = nNeg + nPos;
+			n = nNeg + nPos * bitWidth;
 
 		for (i = 0; i < C.length / 2; i++) {
 			distHamming = 0;

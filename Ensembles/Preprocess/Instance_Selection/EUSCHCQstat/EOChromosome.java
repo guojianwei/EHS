@@ -57,7 +57,7 @@ public class EOChromosome implements Comparable {
 	int smoteNominalArt[][];
 	boolean smoteNulosArt[][];
 	int smoteClassS[];
-	
+	int kN;
 	/** 
 	 * Construct a random chromosome of specified size
 	 * @param size 
@@ -193,7 +193,7 @@ public class EOChromosome implements Comparable {
 			{
 				for(k=0; k<smoteN[i]; k++){
 					smoteClassS[l] = posID;
-					nn = Randomize.Randint(0, kSMOTE - 1);
+					nn = Randomize.Randint(0, kSMOTE);
 					interpola(realTrain[i+nNeg],
 							realTrain[neighbors[j][nn]],
 							nominalTrain[i+nNeg],
@@ -259,7 +259,7 @@ public class EOChromosome implements Comparable {
 	/**
 	 * Function that evaluates a cromosome
 	 */
-	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores) {
+	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores, int bitWidth) {
 
 		int i, j, l=0, m, h;
 		int aciertosP = 0, aciertosN = 0;
@@ -281,14 +281,15 @@ public class EOChromosome implements Comparable {
 				nSelectNeg ++;
 		}
 		smoteTotal = 0;
-		for(i=nNeg,j=0; i<cuerpo.length; i+=3,j++){
+		kN = 3;
+		for(i=nNeg,j=0; i<cuerpo.length; i+=bitWidth,j++){
 			m = 0;
-			if(cuerpo[i] == true)
-				m += 4;
-			if(cuerpo[i+1] == true)
-				m += 2;
-			if(cuerpo[i+2] == true)
-				m += 1;
+			int base = 1;
+			for(h=bitWidth-1; h>=0; h--){
+				if(cuerpo[i+h] == true)
+					m += base;
+				base *= 2;
+			}
 			smoteN[j] = m;
 			smoteTotal += m;
 		}
@@ -306,7 +307,7 @@ public class EOChromosome implements Comparable {
 			smoteNulosArt =  new boolean[smoteTotal][train[0].length];
 			smoteClassS = new int[smoteTotal];
 			smoteEOU(train, trainR, trainN, trainM, clasesT, 
-					K, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas);
+					kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas);
 			
 			h=0;
 			for (h=0, l=0; h<nNeg; h++) {
@@ -332,7 +333,7 @@ public class EOChromosome implements Comparable {
 				l++;
 			}
 			for (m=0; m<smoteDatosArt.length; m++) { // positives
-				for (j=0; j<train[m].length; j++) {
+				for (j=0; j<smoteDatosArt[m].length; j++) {
 					conjS[l][j] = smoteDatosArt[m][j];
 					conjR[l][j] = smoteRealArt[m][j];
 					conjN[l][j] = smoteNominalArt[m][j];
@@ -394,27 +395,30 @@ public class EOChromosome implements Comparable {
 			} else {
 				//beta = (double)genes0Activos(clasesT)/(double)genes1Activos(clasesT);				
 				beta = (double)nSelectNeg /(double)(nPos+smoteTotal);
+				//beta = (double)(nPos+smoteTotal)/(double)nSelectNeg ;
+				if(nSelectNeg==0||(nPos+smoteTotal)==0)
+					beta = 0;
 			}
-			calidad -= Math.abs(1.0-beta)*P;
+			calidad -= Math.abs(1.0-beta)*0.2;
 		}
 
 		if (anteriores[0] != null) {
 			/* Calcular la distancia de Hamming mÃ­nima entre el cromosoma y anteriores[][] */
 			boolean negCurchrome[] = new boolean[nNeg];
-			boolean posCurchrome[] = new boolean[nPos*3];
+			boolean posCurchrome[] = new boolean[nPos*bitWidth];
 			boolean nega[] = new boolean[nNeg];
-			boolean posa[] = new boolean[nPos*3];
+			boolean posa[] = new boolean[nPos*bitWidth];
 			double posRate = (double)totalP/( (double)totalN + (double)totalP );
 			for(i = 0; i < nNeg; i++)
 				negCurchrome[i] = cuerpo[i];
-			for(i = 0; i < nPos*3; i++)
+			for(i = 0; i < nPos*bitWidth; i++)
 				posCurchrome[i] = cuerpo[i+nNeg];
 
 			double q = -Double.MAX_VALUE;
 			for (i = 0; i < anteriores.length && anteriores[i] != null; i++) {
 				for(j = 0; j < nNeg; j++)
 					nega[j] = anteriores[i][j];
-				for(j = 0; j < nPos*3; j++)
+				for(j = 0; j < nPos*bitWidth; j++)
 					posa[j] = anteriores[i][j+nNeg];
 						
 				double qaux = (1-posRate) * Qstatistic(posa, posCurchrome, posCurchrome.length) + posRate * Qstatistic(nega, negCurchrome, negCurchrome.length);
