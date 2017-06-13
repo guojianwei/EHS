@@ -75,10 +75,10 @@ public class EOEUSCHCQstat extends Metodo {
 	private double smoting;
 	private boolean balance;
 	private String wrapper;
-	private int bitWidth;
 	private boolean anteriores[][], salidasAnteriores[][];
 	private boolean[] best, bestOutputs;
 	private int minorCluster[];
+	private int kN, nEvaluation, bitWidth;
 	private double cp;
 
 	/**
@@ -141,7 +141,6 @@ public class EOEUSCHCQstat extends Metodo {
 		int tamS;
 		int chromeSize;
 		long tiempo = System.currentTimeMillis();
-		bitWidth = 2;
 		// Randomize.setSeed (semilla);
 		posID = clasesTrain[0];
 		negID = -1;
@@ -272,7 +271,7 @@ public class EOEUSCHCQstat extends Metodo {
 					nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 					nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 					pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas, anteriores,
-					salidasAnteriores,bitWidth);
+					salidasAnteriores,bitWidth,minorCluster,kN);
 
 		/* Until stop condition */
 		while (ev < nEval) {
@@ -313,7 +312,7 @@ public class EOEUSCHCQstat extends Metodo {
 						nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 						nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 						pFactor, P, posID, nPos,negID, nNeg,distanceEu, entradas,
-						anteriores, salidasAnteriores,bitWidth);
+						anteriores, salidasAnteriores,bitWidth,minorCluster,kN);
 				ev++;
 			}
 
@@ -372,7 +371,7 @@ public class EOEUSCHCQstat extends Metodo {
 								datosArt, realArt, nominalArt, nulosArt,
 								clasesArt, wrapper, k, evMeas, majSelection,
 								pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas,
-								anteriores, salidasAnteriores,bitWidth);
+								anteriores, salidasAnteriores,bitWidth,minorCluster,kN);
 						ev++;
 					}
 
@@ -885,6 +884,10 @@ public class EOEUSCHCQstat extends Metodo {
 			balance = true;
 		else
 			balance = false;
-		smoting = Double.parseDouble(param.getParameter(i++));		
+		smoting = Double.parseDouble(param.getParameter(i++));
+		kN = Integer.parseInt(param.getParameter(i++));
+		nEvaluation = Integer.parseInt(param.getParameter(i++));
+		cp = Double.parseDouble(param.getParameter(i++));
+		bitWidth = Integer.parseInt(param.getParameter(i++));
 	}
 }

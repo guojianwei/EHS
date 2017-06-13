@@ -148,24 +148,14 @@ public class EOChromosome implements Comparable {
 	/* smote select positive sample with special nsmote*/
 	public int smoteEOU(double datosTrain[][], double realTrain[][], int nominalTrain[][], boolean nulosTrain[][], int clasesTrain[],
 			int kSMOTE, int smoteN[], int nPos, int posID, int nNeg, int negID, boolean distanceEu,
-			 keel.Dataset.Attribute entradas[]){
-		int i, j, k;
-		int positives[];
+			 keel.Dataset.Attribute entradas[], int minorCluster[]){
+		int i, j, k, h, m;
 		int neighbors[][];
 		int nSelPos = 0;
 		for(i=0; i<smoteN.length; i++)
 		{
 			if(smoteN[i]>0)
 				nSelPos ++;
-		}
-		positives = new int[nSelPos];
-		for(i=0, j=0; i<smoteN.length; i++)
-		{
-			if(smoteN[i]>0)
-			{
-				positives[j] = i+nNeg;
-				j ++;
-			}
 		}
 		/* Randomize the instance presentation */
 		/*
@@ -177,13 +167,16 @@ public class EOChromosome implements Comparable {
 		}*/
 
 		/* Obtain k-nearest neighbors of each positive instance */
-		neighbors = new int[positives.length][kSMOTE];
-		for (i = 0; i < positives.length; i++) {
-			EUSCHCQstat.evaluacionKNNClass(kSMOTE, datosTrain, realTrain, nominalTrain,
-						nulosTrain, clasesTrain, datosTrain[positives[i]],
-						realTrain[positives[i]], nominalTrain[positives[i]],
-						nulosTrain[positives[i]], Math.max(posID, negID) + 1,
-						distanceEu, neighbors[i], posID);
+		neighbors = new int[nSelPos][kSMOTE];
+		for (i = 0, j = 0; i < smoteN.length; i++) {
+			if(smoteN[i]>0){
+				EUSCHCQstat.evaluacionKNNClass(kSMOTE, datosTrain, realTrain, nominalTrain,
+							nulosTrain, clasesTrain, datosTrain[i+nNeg],
+							realTrain[i+nNeg], nominalTrain[i+nNeg],
+							nulosTrain[i+nNeg], Math.max(posID, negID) + 1,
+							distanceEu, neighbors[j], posID);
+				j ++;
+			}
 		}
 		int nn;
 		int l = 0;
@@ -191,10 +184,19 @@ public class EOChromosome implements Comparable {
 		{
 			if(smoteN[i]>0)
 			{
+				h = kSMOTE;
+				/*
+				for(k=0; k<kSMOTE; k++){
+					if(neighbors[j][k]!=-1){// && (minorCluster[i+nNeg] == minorCluster[neighbors[j][k]])){
+						neighbors[j][h] = neighbors[j][k];
+						h ++;
+					}
+				}*/
 				for(k=0; k<smoteN[i]; k++){
 					smoteClassS[l] = posID;
-					nn = Randomize.Randint(0, kSMOTE);
-					interpola(realTrain[i+nNeg],
+					nn = Randomize.Randint(0, h);
+					if(nn == -1){
+						interpola(realTrain[i+nNeg],
 							realTrain[neighbors[j][nn]],
 							nominalTrain[i+nNeg],
 							nominalTrain[neighbors[j][nn]],
@@ -202,6 +204,15 @@ public class EOChromosome implements Comparable {
 							nulosTrain[neighbors[j][nn]], 
 							smoteDatosArt[l], smoteRealArt[l], 
 							smoteNominalArt[l], smoteNulosArt[l], entradas);
+					}else{
+						for(m=0; m<realTrain[i+nNeg].length; m++){
+							smoteDatosArt[l][m] = datosTrain[i+nNeg][m];
+							smoteRealArt[l][m] = realTrain[i+nNeg][m]; 
+							smoteNominalArt[l][m] = nominalTrain[i+nNeg][m];
+							smoteNulosArt[l][m] = nulosTrain[i+nNeg][m];
+						}
+						
+					}
 					l ++;
 					
 				}
@@ -209,7 +220,7 @@ public class EOChromosome implements Comparable {
 			}
 		}
 		
-		return 0;
+		return l;
 	}
 	private void interpola(double ra[], double rb[], int na[], int nb[], boolean ma[],
 			boolean mb[], double resS[], double resR[], int resN[],
@@ -258,8 +269,9 @@ public class EOChromosome implements Comparable {
 
 	/**
 	 * Function that evaluates a cromosome
+	 * K when evalua its K lables usually be 1
 	 */
-	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores, int bitWidth) {
+	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores, int bitWidth, int minorCluster[], int kN_para) {
 
 		int i, j, l=0, m, h;
 		int aciertosP = 0, aciertosN = 0;
@@ -281,7 +293,7 @@ public class EOChromosome implements Comparable {
 				nSelectNeg ++;
 		}
 		smoteTotal = 0;
-		kN = 3;
+		kN = kN_para;
 		for(i=nNeg,j=0; i<cuerpo.length; i+=bitWidth,j++){
 			m = 0;
 			int base = 1;
@@ -306,8 +318,8 @@ public class EOChromosome implements Comparable {
 			smoteNominalArt = new int[smoteTotal][train[0].length];
 			smoteNulosArt =  new boolean[smoteTotal][train[0].length];
 			smoteClassS = new int[smoteTotal];
-			smoteEOU(train, trainR, trainN, trainM, clasesT, 
-					kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas);
+			int realSmote = smoteEOU(train, trainR, trainN, trainM, clasesT, 
+					kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas, minorCluster);
 			
 			h=0;
 			for (h=0, l=0; h<nNeg; h++) {
@@ -332,7 +344,7 @@ public class EOChromosome implements Comparable {
 				clasesS[l] = clasesT[m];
 				l++;
 			}
-			for (m=0; m<smoteDatosArt.length; m++) { // positives
+			for (m=0; m<realSmote; m++) { // positives
 				for (j=0; j<smoteDatosArt[m].length; j++) {
 					conjS[l][j] = smoteDatosArt[m][j];
 					conjR[l][j] = smoteRealArt[m][j];

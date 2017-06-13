@@ -595,7 +595,7 @@ class Ensemble {
     * Creates a configuration file for the EHS-CHC approach. Qstat + GM approach
     * @param filename
     */
-   private void createConf_EHS(String filename){
+   private void createConf_EHS(String filename, int kN, int nEvaluation, double cp, int bitWidth){
 	   String output = new String("algorithm = IS Methods\n");
 	   output += "inputData = \" "+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"training2.txt\" \""+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4)+"training2.txt\" \"tst.dat\"\n"
 	   		+ "outputData = \"training.txt\" \"tstOutput.dat\"\n\n"
@@ -616,7 +616,11 @@ class Ensemble {
 	   		+ "kSMOTE = 5\n"
 	   		+ "ASMO = both\n"
 	   		+ "balance = YES\n"
-	   		+ "smoting = 1\n";
+	   		+ "smoting = 1\n"
+	   		+ "kN = " + String.valueOf(kN) +"\n"
+	   		+ "nEvaluation = " + String.valueOf(nEvaluation) +"\n"
+	   		+ "cp = " + String.valueOf(cp) +"\n"
+	   		+ "bitWidth = " + String.valueOf(bitWidth) +"\n";
 	   Files.writeFile(filename, output);	   
    }
    /** Preparation of the data-set for RUSBoost
@@ -683,10 +687,15 @@ class Ensemble {
              }
       }else  if (ensembleType.equalsIgnoreCase("EOERUSBOOST")) { //Only
     	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
-
+    	  int kN = Integer.parseInt(classifier.parameters.getParameter(8));
+    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(9));
+    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
+    	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(11));
+    	  
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
-          createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt", 
+        		  kN, nEvaluation, Cp, bitWidth);
           m = new EOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           fm.delete();
