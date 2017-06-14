@@ -196,7 +196,7 @@ public class EOChromosome implements Comparable {
 				for(k=0; k<smoteN[i]; k++){
 					smoteClassS[l] = posID;
 					nn = Randomize.Randint(0, h);
-					if(h>0 && nn != -1){
+					if(h>0){
 						interpola(realTrain[i+nNeg],
 							realTrain[neighbors[j][nn]],
 							nominalTrain[i+nNeg],
