@@ -293,6 +293,14 @@ public class EOChromosome implements Comparable {
 			if(cuerpo[i] == true)
 				nSelectNeg ++;
 		}
+		while(nSelectNeg==0){
+			divergeCHC(0.35, this, 0.25);
+			for(i=0; i<nNeg; i++){
+				if(cuerpo[i] == true)
+					nSelectNeg ++;
+			}
+		}
+		
 		smoteTotal = 0;
 		kN = kN_para;
 		for(i=nNeg,j=0; i<cuerpo.length; i+=bitWidth,j++){
@@ -412,7 +420,7 @@ public class EOChromosome implements Comparable {
 				if(nSelectNeg==0||(nPos+smoteTotal)==0)
 					beta = 0;
 			}
-			calidad -= Math.abs(1.0-beta)*0.2;
+			calidad -= Math.abs(1.0-beta)*P;
 		}
 
 		if (anteriores[0] != null) {
