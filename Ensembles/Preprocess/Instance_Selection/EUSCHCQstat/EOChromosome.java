@@ -184,18 +184,19 @@ public class EOChromosome implements Comparable {
 		{
 			if(smoteN[i]>0)
 			{
-				h = kSMOTE;
-				/*
+				h = 0;
+				
 				for(k=0; k<kSMOTE; k++){
-					if(neighbors[j][k]!=-1){// && (minorCluster[i+nNeg] == minorCluster[neighbors[j][k]])){
+					if(neighbors[j][k]!=-1&& (minorCluster[i+nNeg] == minorCluster[neighbors[j][k]])){
 						neighbors[j][h] = neighbors[j][k];
 						h ++;
 					}
-				}*/
+				}
+				
 				for(k=0; k<smoteN[i]; k++){
 					smoteClassS[l] = posID;
 					nn = Randomize.Randint(0, h);
-					if(nn == -1){
+					if(h>0 && nn != -1){
 						interpola(realTrain[i+nNeg],
 							realTrain[neighbors[j][nn]],
 							nominalTrain[i+nNeg],
@@ -334,7 +335,7 @@ public class EOChromosome implements Comparable {
 					l++;
 				}
 			}
-			for (m=h; m<train.length; m++) { // positives
+			for (m=nNeg; m<train.length; m++) { // positives
 				for (j=0; j<train[m].length; j++) {
 					conjS[l][j] = train[m][j];
 					conjR[l][j] = trainR[m][j];

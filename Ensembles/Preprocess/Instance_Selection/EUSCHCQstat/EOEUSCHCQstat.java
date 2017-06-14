@@ -429,7 +429,7 @@ public class EOEUSCHCQstat extends Metodo {
 					Nmaj++;
 				}
 			}
-			nSel = Nmaj + nPos + poblacion[0].smoteTotal ;
+			nSel = Nmaj + nPos + poblacion[0].smoteTotal ;//real???
 			System.out.println( "0000000nSel:"+nSel+" Nmaj:"+Nmaj+" nPos:"+nPos+" smoteTotal:"+poblacion[0].smoteTotal);
 			
 			/* Construction of S set from the best cromosome */
