@@ -307,6 +307,13 @@ public class EOChromosome implements Comparable {
 			smoteTotal += m;
 		}
 		if (true) {
+			smoteDatosArt = new double[smoteTotal][train[0].length];
+			smoteRealArt = new double[smoteTotal][train[0].length];
+			smoteNominalArt = new int[smoteTotal][train[0].length];
+			smoteNulosArt =  new boolean[smoteTotal][train[0].length];
+			smoteClassS = new int[smoteTotal];
+			smoteTotal = smoteEOU(train, trainR, trainN, trainM, clasesT, 
+					kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas, minorCluster);
 			s = smoteTotal + nPos + nSelectNeg;				
 			vecinos = new int[K];	        
 			conjS = new double[s][train[0].length];
@@ -314,13 +321,6 @@ public class EOChromosome implements Comparable {
 			conjN = new int[s][train[0].length];
 			conjM = new boolean[s][train[0].length];
 			clasesS = new int[s];
-			smoteDatosArt = new double[smoteTotal][train[0].length];
-			smoteRealArt = new double[smoteTotal][train[0].length];
-			smoteNominalArt = new int[smoteTotal][train[0].length];
-			smoteNulosArt =  new boolean[smoteTotal][train[0].length];
-			smoteClassS = new int[smoteTotal];
-			int realSmote = smoteEOU(train, trainR, trainN, trainM, clasesT, 
-					kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas, minorCluster);
 			
 			h=0;
 			for (h=0, l=0; h<nNeg; h++) {
@@ -345,7 +345,7 @@ public class EOChromosome implements Comparable {
 				clasesS[l] = clasesT[m];
 				l++;
 			}
-			for (m=0; m<realSmote; m++) { // positives
+			for (m=0; m<smoteTotal; m++) { // positives
 				for (j=0; j<smoteDatosArt[m].length; j++) {
 					conjS[l][j] = smoteDatosArt[m][j];
 					conjR[l][j] = smoteRealArt[m][j];
