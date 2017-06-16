@@ -429,7 +429,7 @@ public class EOChromosome implements Comparable {
 			boolean posCurchrome[] = new boolean[nPos*bitWidth];
 			boolean nega[] = new boolean[nNeg];
 			boolean posa[] = new boolean[nPos*bitWidth];
-			double posRate = (double)totalP/( (double)totalN + (double)totalP );
+			double posRate = (double)totalP*bitWidth/( (double)totalN + (double)totalP*bitWidth );
 			for(i = 0; i < nNeg; i++)
 				negCurchrome[i] = cuerpo[i];
 			for(i = 0; i < nPos*bitWidth; i++)
@@ -442,14 +442,17 @@ public class EOChromosome implements Comparable {
 				for(j = 0; j < nPos*bitWidth; j++)
 					posa[j] = anteriores[i][j+nNeg];
 						
-				double qaux = (1-posRate) * Qstatistic(posa, posCurchrome, posCurchrome.length) + posRate * Qstatistic(nega, negCurchrome, negCurchrome.length);
+				//double qaux = (1-posRate) * Qstatistic(posa, posCurchrome, posCurchrome.length) + posRate * Qstatistic(nega, negCurchrome, negCurchrome.length);
+				double qaux = (1-posRate) * Hamming(posa, posCurchrome, posCurchrome.length) + posRate * Hamming(nega, negCurchrome, negCurchrome.length);
+				//double qaux = (0.5) * Qstatistic(posa, posCurchrome, posCurchrome.length) + 0.5 * Qstatistic(nega, negCurchrome, negCurchrome.length);
 				//double qaux = Qstatistic(anteriores[i], cuerpo, clases.length);
 				if (q < qaux)
 					q = qaux;
 			}
 			double peso = (double)(anteriores.length - i) / (double) (anteriores.length);
 			double IR = (double)totalN / (double)totalP * 0.1;
-			calidad = calidad * (1.0 / peso) * (1.0 / IR) - q * peso;
+			//calidad = calidad * (1.0 / peso) * (1.0 / IR) - q * peso;
+			calidad = calidad * (1.0 / peso) * (1.0 / IR) + q * peso; //hamming
 		}
 		if(Double.isNaN(calidad)){
 			calidad = Double.MIN_VALUE;
@@ -457,7 +460,15 @@ public class EOChromosome implements Comparable {
 		cruzado = false;
 	}
 
-
+	private double Hamming(boolean[] v1, boolean[] v2, int n){
+		int diff = 0;
+		for(int i = 0; i<n; i++)
+		{
+			if(v1[i] != v2[i])
+				diff++;
+		}
+		return (double)diff/(double)n;
+	}
 	private double Qstatistic(boolean[] v1, boolean[] v2, int n) {
 		double[][] t = new double[2][2];
 		double ceros = 0;

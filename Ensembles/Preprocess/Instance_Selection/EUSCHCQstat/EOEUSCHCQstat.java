@@ -274,6 +274,7 @@ public class EOEUSCHCQstat extends Metodo {
 					salidasAnteriores,bitWidth,minorCluster,kN);
 
 		/* Until stop condition */
+		nEval = nEvaluation;
 		while (ev < nEval) {
 			C = new EOChromosome[popSize];
 
