@@ -303,11 +303,16 @@ public class EOChromosome implements Comparable {
 		
 		smoteTotal = 0;
 		kN = kN_para;
+		boolean binaryCode[] = new boolean [bitWidth];
 		for(i=nNeg,j=0; i<cuerpo.length; i+=bitWidth,j++){
+			binaryCode[0] = cuerpo[i];
+			for(h=1; h<bitWidth; h++)
+				binaryCode[h] = binaryCode[h-1] ^ cuerpo[i+h];
+				
 			m = 0;
 			int base = 1;
 			for(h=bitWidth-1; h>=0; h--){
-				if(cuerpo[i+h] == true)
+				if(binaryCode[h] == true)
 					m += base;
 				base *= 2;
 			}
