@@ -608,7 +608,7 @@ class Ensemble {
 	   		+ "wrapper = k-NN\n"
 	   		+ "Number of Neighbors = 1\n"
 	   		+ "Distance Function = Euclidean\n"
-	   		+ "evMeasure = geometric mean\n"
+	   		+ "evMeasure = f1\n"
 	   		+ "majSelection = no_majority_selection\n"
 	   		+ "EBUS = EBUS\n"
 	   		+ "P = 0.2\n"

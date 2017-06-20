@@ -308,7 +308,9 @@ public class EOChromosome implements Comparable {
 			binaryCode[0] = cuerpo[i];
 			for(h=1; h<bitWidth; h++)
 				binaryCode[h] = binaryCode[h-1] ^ cuerpo[i+h];
-				
+			//for(h=1; h<bitWidth; h++)
+				//binaryCode[h] = cuerpo[i+h];
+			
 			m = 0;
 			int base = 1;
 			for(h=bitWidth-1; h>=0; h--){
@@ -391,7 +393,7 @@ public class EOChromosome implements Comparable {
 			}		    
 		}
 
-		if (evMeas.equalsIgnoreCase("geometric mean")) {
+		if (evMeas.equalsIgnoreCase("gmean")) {
 			calidad = Math.sqrt(((double)aciertosP/(double)totalP)*((double)aciertosN/(double)totalN));			
 		} else if (evMeas.equalsIgnoreCase("auc")) {
 			if (totalP < totalN)
