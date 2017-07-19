@@ -78,8 +78,8 @@ public class EOEUSCHCQstat extends Metodo {
 	private boolean anteriores[][], salidasAnteriores[][];
 	private boolean[] best, bestOutputs;
 	private int minorCluster[];
-	private int kN, nEvaluation, bitWidth;
-	private double cp;
+	private int nEvaluation, bitWidth;
+	private double cp,p;
 
 	/**
 	 * Builder with a script file (configuration file)
@@ -271,7 +271,7 @@ public class EOEUSCHCQstat extends Metodo {
 					nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 					nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 					pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas, anteriores,
-					salidasAnteriores,bitWidth,minorCluster,kN);
+					salidasAnteriores,bitWidth,minorCluster,p);
 
 		/* Until stop condition */
 		nEval = nEvaluation;
@@ -313,7 +313,7 @@ public class EOEUSCHCQstat extends Metodo {
 						nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
 						nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
 						pFactor, P, posID, nPos,negID, nNeg,distanceEu, entradas,
-						anteriores, salidasAnteriores,bitWidth,minorCluster,kN);
+						anteriores, salidasAnteriores,bitWidth,minorCluster,p);
 				ev++;
 			}
 
@@ -372,7 +372,7 @@ public class EOEUSCHCQstat extends Metodo {
 								datosArt, realArt, nominalArt, nulosArt,
 								clasesArt, wrapper, k, evMeas, majSelection,
 								pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas,
-								anteriores, salidasAnteriores,bitWidth,minorCluster,kN);
+								anteriores, salidasAnteriores,bitWidth,minorCluster,p);
 						ev++;
 					}
 
@@ -886,7 +886,7 @@ public class EOEUSCHCQstat extends Metodo {
 		else
 			balance = false;
 		smoting = Double.parseDouble(param.getParameter(i++));
-		kN = Integer.parseInt(param.getParameter(i++));
+		p = Double.parseDouble(param.getParameter(i++));
 		nEvaluation = Integer.parseInt(param.getParameter(i++));
 		cp = Double.parseDouble(param.getParameter(i++));
 		bitWidth = Integer.parseInt(param.getParameter(i++));

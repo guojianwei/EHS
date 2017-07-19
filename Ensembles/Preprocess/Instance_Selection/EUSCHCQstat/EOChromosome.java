@@ -272,7 +272,7 @@ public class EOChromosome implements Comparable {
 	 * Function that evaluates a cromosome
 	 * K when evalua its K lables usually be 1
 	 */
-	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores, int bitWidth, int minorCluster[], int kN_para) {
+	public void evalua (double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[], double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[], String wrapper, int K, String evMeas, boolean MS, boolean pFactor, double P, int posID, int nPos, int negID, int nNeg,boolean distanceEu, keel.Dataset.Attribute entradas[], boolean[][] anteriores, boolean[][] salidasAnteriores, int bitWidth, int minorCluster[], double puni) {
 
 		int i, j, l=0, m, h;
 		int aciertosP = 0, aciertosN = 0;
@@ -302,7 +302,7 @@ public class EOChromosome implements Comparable {
 		}
 		
 		smoteTotal = 0;
-		kN = kN_para;
+		kN = 5;
 		boolean binaryCode[] = new boolean [bitWidth];
 		for(i=nNeg,j=0; i<cuerpo.length; i+=bitWidth,j++){
 			binaryCode[0] = cuerpo[i];
@@ -393,7 +393,7 @@ public class EOChromosome implements Comparable {
 			}		    
 		}
 
-		if (evMeas.equalsIgnoreCase("gmean")) {
+		if (evMeas.equalsIgnoreCase("mean")) {
 			calidad = Math.sqrt(((double)aciertosP/(double)totalP)*((double)aciertosN/(double)totalN));			
 		} else if (evMeas.equalsIgnoreCase("auc")) {
 			if (totalP < totalN)
@@ -428,6 +428,7 @@ public class EOChromosome implements Comparable {
 					beta = 0;
 			}
 			calidad -= Math.abs(1.0-beta)*P;
+			calidad -= puni*(double)(smoteTotal)/(double)nSelectNeg;
 		}
 
 		if (anteriores[0] != null) {
@@ -450,16 +451,16 @@ public class EOChromosome implements Comparable {
 					posa[j] = anteriores[i][j+nNeg];
 						
 				//double qaux = (1-posRate) * Qstatistic(posa, posCurchrome, posCurchrome.length) + posRate * Qstatistic(nega, negCurchrome, negCurchrome.length);
-				double qaux = (1-posRate) * Hamming(posa, posCurchrome, posCurchrome.length) + posRate * Hamming(nega, negCurchrome, negCurchrome.length);
+				//double qaux = (1-posRate) * Hamming(posa, posCurchrome, posCurchrome.length) + posRate * Hamming(nega, negCurchrome, negCurchrome.length);
 				//double qaux = (0.5) * Qstatistic(posa, posCurchrome, posCurchrome.length) + 0.5 * Qstatistic(nega, negCurchrome, negCurchrome.length);
-				//double qaux = Qstatistic(anteriores[i], cuerpo, clases.length);
+				double qaux = Qstatistic(anteriores[i], cuerpo, clases.length);
 				if (q < qaux)
 					q = qaux;
 			}
 			double peso = (double)(anteriores.length - i) / (double) (anteriores.length);
 			double IR = (double)totalN / (double)totalP * 0.1;
-			//calidad = calidad * (1.0 / peso) * (1.0 / IR) - q * peso;
-			calidad = calidad * (1.0 / peso) * (1.0 / IR) + q * peso; //hamming
+			calidad = calidad * (1.0 / peso) * (1.0 / IR) - q * peso;
+			//calidad = calidad * (1.0 / peso) * (1.0 / IR) + q * peso; //hamming
 		}
 		if(Double.isNaN(calidad)){
 			calidad = Double.MIN_VALUE;

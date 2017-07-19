@@ -579,7 +579,7 @@ class Ensemble {
 	   		+ "wrapper = k-NN\n"
 	   		+ "Number of Neighbors = 1\n"
 	   		+ "Distance Function = Euclidean\n"
-	   		+ "evMeasure = geometric mean\n"
+	   		+ "evMeasure = gmean\n"
 	   		+ "majSelection = majority_selection\n"
 	   		+ "EBUS = EBUS\n"
 	   		+ "P = 0.2\n"
@@ -595,7 +595,7 @@ class Ensemble {
     * Creates a configuration file for the EHS-CHC approach. Qstat + GM approach
     * @param filename
     */
-   private void createConf_EHS(String filename, int kN, int nEvaluation, double cp, int bitWidth){
+   private void createConf_EHS(String filename, double p, int nEvaluation, double cp, int bitWidth){
 	   String output = new String("algorithm = IS Methods\n");
 	   output += "inputData = \" "+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"training2.txt\" \""+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4)+"training2.txt\" \"tst.dat\"\n"
 	   		+ "outputData = \"training.txt\" \"tstOutput.dat\"\n\n"
@@ -608,7 +608,7 @@ class Ensemble {
 	   		+ "wrapper = k-NN\n"
 	   		+ "Number of Neighbors = 1\n"
 	   		+ "Distance Function = Euclidean\n"
-	   		+ "evMeasure = f1\n"
+	   		+ "evMeasure = geometric mean\n"
 	   		+ "majSelection = no_majority_selection\n"
 	   		+ "EBUS = EBUS\n"
 	   		+ "P = 0.2\n"
@@ -617,7 +617,7 @@ class Ensemble {
 	   		+ "ASMO = both\n"
 	   		+ "balance = YES\n"
 	   		+ "smoting = 1\n"
-	   		+ "kN = " + String.valueOf(kN) +"\n"
+	   		+ "p = " + String.valueOf(p) +"\n"
 	   		+ "nEvaluation = " + String.valueOf(nEvaluation) +"\n"
 	   		+ "cp = " + String.valueOf(cp) +"\n"
 	   		+ "bitWidth = " + String.valueOf(bitWidth) +"\n";
@@ -687,7 +687,7 @@ class Ensemble {
              }
       }else  if (ensembleType.equalsIgnoreCase("EOERUSBOOST")) { //Only
     	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
-    	  int kN = Integer.parseInt(classifier.parameters.getParameter(8));
+    	  double p = Double.parseDouble(classifier.parameters.getParameter(8));
     	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(9));
     	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
     	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(11));
@@ -695,7 +695,7 @@ class Ensemble {
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
           createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt", 
-        		  kN, nEvaluation, Cp, bitWidth);
+        		  p, nEvaluation, Cp, bitWidth);
           m = new EOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           fm.delete();
