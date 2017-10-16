@@ -47,6 +47,7 @@ import org.core.Randomize;
 import keel.Algorithms.ImbalancedClassification.Auxiliar.AUC.PredPair;
 
 import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Instance_Selection.EUSCHCQstat.EUSCHCQstat;
+import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Instance_Selection.EUSCHCQstat.MCOEOEUSCHCQstat;
 import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Instance_Selection.EUSCHCQstat.EOEUSCHCQstat;
 
 /**
@@ -135,6 +136,11 @@ class Ensemble {
    
    boolean[][] anteriores;
    boolean[][] salidasAnteriores;
+
+   boolean[][] anterioresMaj;
+   boolean[][] salidasAnterioresMaj;
+   boolean[][] anterioresMinor;
+   boolean[][] salidasAnterioresMinor;
    int[] miCluster;
    
    int nClassifierCounter;
@@ -280,7 +286,14 @@ class Ensemble {
             	System.out.println(nextParameter);
             	anteriores = new boolean[this.nClassifier][];
             	salidasAnteriores = new boolean[this.nClassifier][];
+            	if (ensembleType.contains("COEOERUS")) {
+            		anterioresMaj = new boolean[this.nClassifier][];
+            		salidasAnterioresMaj = new boolean[this.nClassifier][];
+            		anterioresMinor = new boolean[this.nClassifier][];
+            		salidasAnterioresMinor = new boolean[this.nClassifier][];
+            	}
             }
+            
          }
          /* DATABOOST-IM algorithm */
          else if (ensembleType.equalsIgnoreCase("DATABOOST-IM"))
@@ -595,7 +608,7 @@ class Ensemble {
     * Creates a configuration file for the EHS-CHC approach. Qstat + GM approach
     * @param filename
     */
-   private void createConf_EHS(String filename, double p, int nEvaluation, double cp, int bitWidth){
+   private void createConf_EHS(String filename, double p, int nEvaluation, double cp, int bitWidth, String bl){
 	   String output = new String("algorithm = IS Methods\n");
 	   output += "inputData = \" "+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"training2.txt\" \""+multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4)+"training2.txt\" \"tst.dat\"\n"
 	   		+ "outputData = \"training.txt\" \"tstOutput.dat\"\n\n"
@@ -620,7 +633,8 @@ class Ensemble {
 	   		+ "p = " + String.valueOf(p) +"\n"
 	   		+ "nEvaluation = " + String.valueOf(nEvaluation) +"\n"
 	   		+ "cp = " + String.valueOf(cp) +"\n"
-	   		+ "bitWidth = " + String.valueOf(bitWidth) +"\n";
+	   		+ "bitWidth = " + String.valueOf(bitWidth) +"\n"
+	   		+ "borderLine = " + bl +"\n";
 	   Files.writeFile(filename, output);	   
    }
    /** Preparation of the data-set for RUSBoost
@@ -686,16 +700,17 @@ class Ensemble {
             	 }
              }
       }else  if (ensembleType.equalsIgnoreCase("EOERUSBOOST")) { //Only
-    	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
-    	  double p = Double.parseDouble(classifier.parameters.getParameter(8));
-    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(9));
-    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
-    	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(11));
-    	  
+    	  System.out.println("---------------IN EOERUSBOOST---------------------------------------------------");
+    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(8));
+    	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(9));
+    	  double p = Double.parseDouble(classifier.parameters.getParameter(10));
+    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(11));
+    	  String borderLine = classifier.parameters.getParameter(12);
+
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
           createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt", 
-        		  p, nEvaluation, Cp, bitWidth);
+        		  p, nEvaluation, Cp, bitWidth,borderLine);
           m = new EOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
           fm.delete();
@@ -750,6 +765,72 @@ class Ensemble {
             		 }
             	 }
              }
+      }else if(ensembleType.equalsIgnoreCase("COEOERUSBOOST")) { //Only
+    	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
+    	  double p = 0; //not used //Double.parseDouble(classifier.parameters.getParameter(8));
+    	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(8));
+    	  double Cp = 0; //not used //Double.parseDouble(classifier.parameters.getParameter(10));
+    	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(9));
+    	  String borderLine = "False";//classifier.parameters.getParameter(12);
+    	  
+    	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
+          Metodo m = null;
+          createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt", 
+        		  p, nEvaluation, Cp, bitWidth, borderLine);
+          m = new MCOEOEUSCHCQstat(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          File fm = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt");
+          fm.delete();
+          MCOEOEUSCHCQstat m2 = (MCOEOEUSCHCQstat)m;
+          m2.setAnteriores(anterioresMaj, anterioresMinor);
+          m2.setSalidasAnteriores(salidasAnteriores);   
+          
+          m.runAlgorithm();
+          m.run();
+
+          try {
+        //        originalDS.getIS().setAttributesAsNonStatic();
+            	/*actualDS the samples selected by the EUS*/
+               /* Read the preprocessed data-set */
+             actualDS = new myDataset();
+             actualDS.readClassificationSet(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training.txt", false);
+           }catch (IOException e) {
+             System.err.println("There was a problem while reading the input preprocessed data-sets: " + e);
+           }
+            
+             File f = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training.txt");
+             File f2 = new File(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt");
+             f.delete();
+             f2.delete();
+            
+             m2 = (MCOEOEUSCHCQstat)m;
+             anterioresMaj[t] = m2.getBestMaj().clone();
+             anterioresMinor[t] = m2.getBestMinor().clone();
+             salidasAnteriores[t] = m2.getBestOutputs().clone();
+
+             m = null;
+
+             selected = new int[actualDS.getnData()];
+             Arrays.fill(selected, -1);
+             boolean[] aux = new boolean[originalDS.getnData()];
+             Arrays.fill(aux, false);
+             for (int i = 0; i < actualDS.getnData(); i++) {
+            	 double[] ej1 = actualDS.getExample(i);
+            	 for (int j = 0; j < originalDS.getnData(); j++) {
+            		 if (aux[j] == true)
+            			 continue;
+            		 double[] ej2 = originalDS.getExample(j);
+            		 boolean fin = false;
+            		 for (int k = 0; k < ej1.length && !fin; k++) {
+            			 if (ej1[k] != ej2[k])
+            				 fin = true;
+            		 }
+            		 if (fin == false) {
+            			 selected[i] = j;
+            			 aux[j] = true;
+            		 }
+            	 }
+             }
+    	  
       }else {
     	  actualDS = new myDataset(originalDS);
     	  selected = actualDS.randomUnderSampling(originalDS, majC, N); //N% of the total will be from the majority class

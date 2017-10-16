@@ -44,6 +44,9 @@ import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Basic.Metod
 import keel.Algorithms.ImbalancedClassification.Ensembles.Preprocess.Basic.KNN;
 
 import java.util.StringTokenizer;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import org.core.*;
 import keel.Dataset.*;
@@ -55,7 +58,16 @@ import keel.Algorithms.ImbalancedClassification.Ensembles.parseParameters;
  * @version 1.1
  * @since JDK 1.5
  */
-public class EOEUSCHCQstat extends Metodo {
+public class MCOEOEUSCHCQstat extends Metodo {
+	/*important var extends from Metodo
+	protected double datosTrain[][];
+	protected int clasesTrain[];
+	protected double datosTest[][];
+	protected int clasesTest[];
+	protected boolean nulosTrain[][];
+	protected int nominalTrain[][];
+	protected double realTrain[][];
+	 */
 
 	/* Own parameters of the algorithm */
 	private long seed;
@@ -75,94 +87,150 @@ public class EOEUSCHCQstat extends Metodo {
 	private double smoting;
 	private boolean balance;
 	private String wrapper;
-	private boolean anteriores[][], salidasAnteriores[][];
-	private boolean[] best, bestOutputs;
+	private boolean anterioresMaj[][], anterioresMinor[][],salidasAnteriores[][];
+	private boolean[] bestMaj, bestMinor, bestOutputs;
 	private int minorCluster[];
 	private int nEvaluation, bitWidth;
 	private double cp,p;
-	private boolean bLineMode;
 
 	/**
 	 * Builder with a script file (configuration file)
 	 * @param ficheroScript
 	 */
-	public EOEUSCHCQstat(String ficheroScript) {
+	public MCOEOEUSCHCQstat(String ficheroScript) {
 		super(ficheroScript);
 	}
-	public void setCluster(int[] minorCluster) {
-		this.minorCluster = minorCluster;
-	}
-	public int[]  getCluster() {
-		return this.minorCluster;
-	}
-
-	public void setAnteriores(boolean[][] anteriores) {
-		this.anteriores = anteriores;
+	
+	public void setAnteriores(boolean[][] anterioresMaj,boolean[][] anterioresMinor) {
+		this.anterioresMaj = anterioresMaj;
+		this.anterioresMinor = anterioresMinor;
 	}
 
 	public void setSalidasAnteriores(boolean[][] anteriores) {
 		this.salidasAnteriores = anteriores;
 	}
 
-	public boolean[] getBest() {
-		return best;
+	public boolean[] getBestMaj() {
+		return bestMaj;
 	}
-
+	public boolean[] getBestMinor() {
+		return bestMinor;
+	}
 	public boolean[] getBestOutputs() {
 		return bestOutputs;
 	}
-	public int borderLine(boolean [] isBorder, int nPos, int posID, int nNeg, int negID){
-		int i, j, k, nres = 0, cnt;
-		int [][]neighbors = new int[nPos][kSMOTE];
-		for (i = 0, j = 0; i < datosTrain.length; i++) {
-			if(clasesTrain[i] == posID){
-				KNN.evaluacionKNN2(kSMOTE, datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain, 
-						 datosTrain[i],	realTrain[i], nominalTrain[i], nulosTrain[i], 
-						Math.max(posID, negID) + 1, distanceEu, neighbors[j]);
-				cnt = 0;
-				for(k=0; k<kSMOTE; k++){
-					if(clasesTrain[neighbors[j][k]] == negID){
-						cnt ++;
-					}
+	
+	private BaseChro[] recombination(BaseChro parent[], BaseChro C[], int d, int[] tamC,int []ev, int indice){
+		/* Selection(r) of C(t) from P(t) */
+		int i,l, tmp, pos;
+		int []baraje = new int[popSize];
+		Constructor<? extends BaseChro> tmpClass = null;
+		try {
+			tmpClass = parent[0].getClass().getConstructor( parent[0].getClass());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		for (i = 0; i < popSize; i++)
+			baraje[i] = i;
+		for (i = 0; i < popSize; i++) {
+			pos = Randomize.Randint(i, popSize - 1);
+			tmp = baraje[i];
+			baraje[i] = baraje[pos];
+			baraje[pos] = tmp;
+		}
+		for (i = 0; i < popSize; i++){
+				try {
+					C[i] = tmpClass.newInstance(parent[baraje[i]]);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} //new EOChromosome(poblacion[baraje[i]]);
+		}
+		/* Structure recombination in C(t) constructing C'(t) */
+		tamC[indice] = recombinar(C, d);
+		BaseChro[] newPob = new BaseChro[tamC[indice]];
+		try{
+			for (i = 0, l = 0; i < C.length; i++) {
+				if (C[i].isValid()) { // the cromosome must be copied to the
+					// new poblation C'(t)
+					newPob[l] = tmpClass.newInstance(C[i]);
+					l++;
 				}
-				if(cnt>kSMOTE/2 && cnt<kSMOTE){
-					isBorder[i] = true;
-					nres ++;
-				}
-				j ++;
+			}
+		}catch( Exception e){ e.printStackTrace();}
+		return newPob;
+	}
+
+	private void competition(BaseChro parent[],BaseChro newPob[], int tamC){
+		BaseChro pobTemp[];
+		pobTemp = new BaseChro[popSize];
+		Constructor<? extends BaseChro> tmpClass = null;
+		try {
+			tmpClass = parent[0].getClass().getConstructor(parent[0].getClass());
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		int i, j, l;
+		try{
+		for (i = 0, j = 0, l = 0; i < popSize && l < tamC; i++) {
+			if (parent[j].getFit() > newPob[l].getFit()) {
+				pobTemp[i] = tmpClass.newInstance(parent[j]);
+				j++;
+			} else {
+					pobTemp[i] = tmpClass.newInstance(newPob[l]);
+				l++;
 			}
 		}
-		
-		return nres;
+		if (l == tamC) { // there are cromosomes for copying
+			for (; i < popSize; i++) {
+					pobTemp[i] = tmpClass.newInstance(parent[j]);
+				j++;
+			}
+		}
+		}catch (Exception e){
+			e.printStackTrace();
+		}
+		//parent = pobTemp;
+		for (i = 0; i < popSize; i++ )
+			parent[i]= pobTemp[i];
 	}
-	/**
-	 * It runs the Qstatistic
-	 */
+	private int doDiverge(BaseChro poblacion[], int chromeSize){
+		int i, d;
+		for (i = 1; i < popSize; i++) {
+			poblacion[i].divergeCHC(r, poblacion[0], prob0to1Div);
+		}
+		/* Reinicialization of d value */
+		d = (int) (r * (1.0 - r) * (double) chromeSize);
+		return d;
+	}
 	public void runAlgorithm() {
-
-		int i, j, l, h;
+		
 		double conjS[][];
 		double conjR[][];
 		int conjN[][];
 		boolean conjM[][];
 		int clasesS[];
-		EOChromosome poblacion[];
-		EOChromosome C[];
-		EOChromosome newPob[];
-		EOChromosome pobTemp[];
-		int ev = 0;
-		int baraje[];
-		int pos, tmp, d, tamC, tamS;
-		int nSel = 0, chromeSize, nPos = 0, nNeg = 0, posID, negID;
-		int nPosOri, nNegOri;
 		double datosArt[][];
 		double realArt[][];
 		int nominalArt[][];
 		boolean nulosArt[][];
 		int clasesArt[];
-		long tiempo = System.currentTimeMillis();
+		MajCOEOChromosome[] poblacionMaj, eliteMaj;
+		MinCOEOChromosome[] poblacionMinor, eliteMinor;
+		BaseChro[] newPobMaj;
+		BaseChro[] newPobMinor;
+		BaseChro C[];
 		
-		// Randomize.setSeed (semilla);
+		int i, j, l, h;
+		int dmaj, dminor, pos, tmp;
+		int nSel = 0, nPos = 0, nNeg = 0, posID, negID;
+		int eliteSize = 1, chromeSizeMaj, chromeSizeMinor;
+		int[] ev = {0};
+		int tamC[]= new int[2];
+		long tiempo = System.currentTimeMillis();
+
 		posID = clasesTrain[0];
 		negID = -1;
 		for (i = 0; i < clasesTrain.length; i++) {
@@ -185,36 +253,16 @@ public class EOEUSCHCQstat extends Metodo {
 			tmp = posID;
 			posID = negID;
 			negID = tmp;
-		} 
-
-		if (hybrid.equalsIgnoreCase("smote + eus")) {
-			if (balance) {
-				tamS = 2 * nNeg;
-			} else {
-				tamS = nNeg + nPos + (int) (nPos * smoting);
-			}
-			datosArt = new double[tamS][datosTrain[0].length];
-			realArt = new double[tamS][datosTrain[0].length];
-			nominalArt = new int[tamS][datosTrain[0].length];
-			nulosArt = new boolean[tamS][datosTrain[0].length];
-			clasesArt = new int[tamS];
-
-			SMOTE(datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
-					datosArt, realArt, nominalArt, nulosArt, clasesArt, kSMOTE,
-					ASMO, smoting, balance, nPos, posID, nNeg, negID,
-					distanceEu);
-		} else if (hybrid.equalsIgnoreCase("ehs")) {
+		}
+		// posID, negID, nPos, nNeg //Arts are sample, trains are original
+		if (hybrid.equalsIgnoreCase("ehs")) {
 			/*
 			 * negtive sample as left, positive right*/
-			boolean isBorder[] = new boolean[datosTrain.length];
-			int nArt = datosTrain.length;
-			if(bLineMode)
-				nArt = borderLine(isBorder, nPos, posID, nNeg, negID) + nNeg;
-			datosArt = new double[nArt][datosTrain[0].length];
-			realArt = new double[nArt][datosTrain[0].length];
-			nominalArt = new int[nArt][datosTrain[0].length];
-			nulosArt = new boolean[nArt][datosTrain[0].length];
-			clasesArt = new int[nArt];
+			datosArt = new double[datosTrain.length][datosTrain[0].length];
+			realArt = new double[datosTrain.length][datosTrain[0].length];
+			nominalArt = new int[datosTrain.length][datosTrain[0].length];
+			nulosArt = new boolean[datosTrain.length][datosTrain[0].length];
+			clasesArt = new int[clasesTrain.length];
 			l = 0;
 			for (i = 0; i < datosTrain.length; i++) {
 				if(clasesTrain[i] == negID){
@@ -230,19 +278,16 @@ public class EOEUSCHCQstat extends Metodo {
 			}
 			for (i = 0; i < datosTrain.length; i++) {
 				if(clasesTrain[i] == posID){
-					if((!bLineMode)||(bLineMode && isBorder[i])){
-						for (j = 0; j < datosTrain[i].length; j++) {
-							datosArt[l][j] = datosTrain[i][j];
-							realArt[l][j] = realTrain[i][j];
-							nominalArt[l][j] = nominalTrain[i][j];
-							nulosArt[l][j] = nulosTrain[i][j];
-						}
-						clasesArt[l] = clasesTrain[i];
-						l ++;
+					for (j = 0; j < datosTrain[i].length; j++) {
+						datosArt[l][j] = datosTrain[i][j];
+						realArt[l][j] = realTrain[i][j];
+						nominalArt[l][j] = nominalTrain[i][j];
+						nulosArt[l][j] = nulosTrain[i][j];
 					}
+					clasesArt[l] = clasesTrain[i];
+					l ++;
 				}
 			}
-			
 		}else{
 			datosArt = new double[datosTrain.length][datosTrain[0].length];
 			realArt = new double[datosTrain.length][datosTrain[0].length];
@@ -259,259 +304,191 @@ public class EOEUSCHCQstat extends Metodo {
 				clasesArt[i] = clasesTrain[i];
 			}
 		}
-		nPosOri = nPos;
-		nNegOri = nNeg;
-		/* Count of number of positive and negative examples */
-		nPos = nNeg = 0;
-		for (i = 0; i < clasesArt.length; i++) {
-			if (clasesArt[i] == posID)
-				nPos++;
-			else
-				nNeg++;
-		}
-
-		if (majSelection) //true
-			d = nNeg / 4;
-		else
-			d = datosArt.length / 4;
 		
-		chromeSize = (nNeg + nPos*bitWidth);
-		d = chromeSize / 4;
-		if(this.minorCluster==null)
-		{
-			calcLocalInfo(datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain, nNeg, posID, negID);
-		}
+		chromeSizeMaj = nNeg;
+		chromeSizeMinor = nPos*bitWidth;
+		dmaj = chromeSizeMaj / 4;
+		dminor = chromeSizeMinor / 4;
 		/* Random initialization of the population */
-		poblacion = new EOChromosome[popSize];
-		baraje = new int[popSize];
+		poblacionMaj = new MajCOEOChromosome[popSize];
+		poblacionMinor = new MinCOEOChromosome[popSize];
+		eliteMaj = new MajCOEOChromosome[eliteSize];
+		eliteMinor = new MinCOEOChromosome[eliteSize];
 		for (i = 0; i < popSize; i++){
-			poblacion[i] = new EOChromosome(chromeSize);
-			for(j=nNeg; j<chromeSize; j++){
-				poblacion[i].setGen(j, false);
+			poblacionMaj[i] = new MajCOEOChromosome(chromeSizeMaj);
+			poblacionMinor[i] = new MinCOEOChromosome(chromeSizeMinor);
+		}
+		for(i=0; i<eliteSize; i++){
+			eliteMaj[i] = new MajCOEOChromosome(chromeSizeMaj);
+			eliteMinor[i] = new MinCOEOChromosome(chromeSizeMinor);
+			for(j=0; j<eliteMinor[i].geneBit.length; j++){
+				eliteMinor[i].setGen(j, false);
 			}
 		}
 		/* Initial evaluation of the population */
-		for (i = 0; i < popSize; i++)
-			poblacion[i].evalua(datosTrain, realTrain, nominalTrain,
-					nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
-					nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
-					pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas, anteriores,
-					salidasAnteriores,bitWidth,minorCluster,p);
-
+		for (i = 0; i < popSize; i++){
+			poblacionMaj[i].evalua(
+					datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+					datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMinor,
+					wrapper, k, evMeas, pFactor, P, posID, nPos, negID, nNeg,
+					distanceEu, entradas, anterioresMaj, salidasAnteriores);
+			poblacionMinor[i].evalua(
+					datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+					datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMaj,
+					wrapper, k, evMeas, pFactor, P, posID, nPos, negID, nNeg,
+					distanceEu, entradas, anterioresMinor, salidasAnteriores,bitWidth);
+		}
+		for(k=0; k<eliteSize; k++) {
+			eliteMaj[k] = new MajCOEOChromosome(poblacionMaj[k]);
+			eliteMinor[k] =  new MinCOEOChromosome(poblacionMinor[k]);
+		}
+		
 		/* Until stop condition */
 		nEval = nEvaluation;
-		while (ev < nEval) {
-			C = new EOChromosome[popSize];
-
-			/* Selection(r) of C(t) from P(t) */
-			for (i = 0; i < popSize; i++)
-				baraje[i] = i;
-			for (i = 0; i < popSize; i++) {
-				pos = Randomize.Randint(i, popSize - 1);
-				tmp = baraje[i];
-				baraje[i] = baraje[pos];
-				baraje[pos] = tmp;
-			}
-			for (i = 0; i < popSize; i++)
-				if (majSelection)
-					C[i] = new EOChromosome(nNeg, poblacion[baraje[i]]);
-				else
-					C[i] = new EOChromosome(chromeSize, poblacion[baraje[i]]);
-
-			/* Structure recombination in C(t) constructing C'(t) */
-			tamC = recombinar(C, d, nNeg, nPos, majSelection);
-			newPob = new EOChromosome[tamC];
-			for (i = 0, l = 0; i < C.length; i++) {
-				if (C[i].esValido()) { // the cromosome must be copied to the
-					// new poblation C'(t)
-					if (majSelection)
-						newPob[l] = new EOChromosome(nNeg, C[i]);
-					else
-						newPob[l] = new EOChromosome(chromeSize, C[i]);
-					l++;
-				}
-			}
+		while (ev[0] < nEval) {
+			C = new MajCOEOChromosome[popSize];
+			newPobMaj =  recombination(poblacionMaj, C, dmaj, tamC, ev, 0);
+			C = new MinCOEOChromosome[popSize];
+			newPobMinor = recombination(poblacionMinor, C, dminor,tamC, ev, 1);
 
 			/* Structure evaluation in C'(t) */
-			for (i = 0; i < newPob.length; i++) {
-				newPob[i].evalua(datosTrain, realTrain, nominalTrain,
-						nulosTrain, clasesTrain, datosArt, realArt, nominalArt,
-						nulosArt, clasesArt, wrapper, k, evMeas, majSelection,
-						pFactor, P, posID, nPos,negID, nNeg,distanceEu, entradas,
-						anteriores, salidasAnteriores,bitWidth,minorCluster,p);
-				ev++;
+			for (i = 0; i < newPobMaj.length; i++) {
+				((MajCOEOChromosome) newPobMaj[i]).evalua(
+						datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+						datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMinor,
+						wrapper, k, evMeas, pFactor,P, posID, nPos,negID, nNeg,
+						distanceEu, entradas, anterioresMaj, salidasAnteriores);
+				ev[0]++;
 			}
+			for (i = 0; i < newPobMinor.length; i++) {
+				((MinCOEOChromosome)newPobMinor[i]).evalua(
+						datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+						datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMaj,
+						wrapper, k, evMeas, pFactor,P, posID, nPos, negID, nNeg,
+						distanceEu, entradas, anterioresMinor, salidasAnteriores,bitWidth);
+				ev[0]++;
+			}
+			for (i = 0; i < popSize; i++) {
+				poblacionMaj[i].evalua(
+						datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+						datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMinor,
+						wrapper, k, evMeas, pFactor,P, posID, nPos,negID, nNeg,
+						distanceEu, entradas, anterioresMaj, salidasAnteriores);
+				poblacionMinor[i].evalua(
+						datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+						datosArt, realArt, nominalArt, nulosArt, clasesArt, eliteMaj,
+						wrapper, k, evMeas, pFactor,P, posID, nPos, negID, nNeg,
+						distanceEu, entradas, anterioresMinor, salidasAnteriores,bitWidth);
+				ev[0]+=2;
+			}
+			
 
 			/* Selection(s) of P(t) from C'(t) and P(t-1) */
-			Arrays.sort(poblacion);
-			Arrays.sort(newPob);
+			Arrays.sort(poblacionMaj);
+			Arrays.sort(poblacionMinor);
+			Arrays.sort(newPobMaj);
+			Arrays.sort(newPobMinor);
+
 			/*
 			 * If the best of C' is worse than the worst of P(t-1), then there
 			 * will no changes
 			 */
-			if (tamC == 0
-					|| newPob[0].getCalidad() < poblacion[popSize - 1]
-							.getCalidad()) {
-				d--;
-			} else {
-				pobTemp = new EOChromosome[popSize];
-				for (i = 0, j = 0, l = 0; i < popSize && l < tamC; i++) {
-					if (poblacion[j].getCalidad() > newPob[l].getCalidad()) {
-						if (majSelection)
-							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
-						else
-							pobTemp[i] = new EOChromosome(chromeSize,
-									poblacion[j]);
-						j++;
-					} else {
-						if (majSelection)
-							pobTemp[i] = new EOChromosome(nNeg, newPob[l]);
-						else
-							pobTemp[i] = new EOChromosome(chromeSize,
-									newPob[l]);
-						l++;
-					}
-				}
-				if (l == tamC) { // there are cromosomes for copying
-					for (; i < popSize; i++) {
-						if (majSelection)
-							pobTemp[i] = new EOChromosome(nNeg, poblacion[j]);
-						else
-							pobTemp[i] = new EOChromosome(chromeSize,
-									poblacion[j]);
-						j++;
-					}
-				}
-				poblacion = pobTemp;
+			if(tamC[0] == 0	|| newPobMaj[0].getFit() < poblacionMaj[popSize - 1].getFit()){
+				dmaj --; 
+			} else{
+				competition(poblacionMaj, newPobMaj, tamC[0]);
+			}
+			if(tamC[1] == 0 || newPobMinor[0].getFit() < poblacionMinor[popSize - 1].getFit()){
+				dminor --; 
+			} else{
+				competition(poblacionMinor, newPobMinor, tamC[1]);
 			}
 
 			/* Last step of the algorithm */
-			if (d <= 0) {
-				for (i = 1; i < popSize; i++) {
-					poblacion[i].divergeCHC(r, poblacion[0], prob0to1Div);
-				}
+			if (dmaj <= 0) {
+				dmaj = doDiverge(poblacionMaj, chromeSizeMaj);
 				for (i = 0; i < popSize; i++)
-					if (!(poblacion[i].estaEvaluado())) {
-						poblacion[i].evalua(datosTrain, realTrain,
-								nominalTrain, nulosTrain, clasesTrain,
-								datosArt, realArt, nominalArt, nulosArt,
-								clasesArt, wrapper, k, evMeas, majSelection,
-								pFactor, P, posID, nPos, negID, nNeg, distanceEu, entradas,
-								anteriores, salidasAnteriores,bitWidth,minorCluster,p);
-						ev++;
+					if (!(poblacionMaj[i].hasEval())) {
+						poblacionMaj[i].evalua(
+								datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+								datosArt, realArt, nominalArt, nulosArt, clasesArt,
+								eliteMinor,
+								wrapper, k, evMeas,	pFactor, P, posID, nPos, negID, nNeg,
+								distanceEu, entradas, anterioresMaj, salidasAnteriores);
+						ev[0]++;
 					}
-
-				/* Reinicialization of d value */
-				if (majSelection)
-					d = (int) (r * (1.0 - r) * (double) nNeg);
-				else
-					d = (int) (r * (1.0 - r) * (double) chromeSize);
+			}
+			if (dminor <= 0) {
+				dminor = doDiverge(poblacionMinor, chromeSizeMinor);
+				for (i = 0; i < popSize; i++)
+					if (!(poblacionMinor[i].hasEval())) {
+						poblacionMinor[i].evalua(
+								datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain,
+								datosArt, realArt, nominalArt, nulosArt, clasesArt,
+								eliteMaj,
+								wrapper, k, evMeas,	pFactor, P, posID, nPos, negID, nNeg,
+								distanceEu, entradas, anterioresMinor, salidasAnteriores,bitWidth);
+						ev[0]++;
+					}
+			}
+			for(k=0; k<eliteSize; k++) {
+				eliteMaj[k] = new MajCOEOChromosome(poblacionMaj[k]);
+				eliteMinor[k] =  new MinCOEOChromosome(poblacionMinor[k]);
 			}
 		}
 
-		Arrays.sort(poblacion);
-		if (majSelection) {
-			nSel = poblacion[0].genesActivos() + nPos;
-
-			/* Construction of S set from the best cromosome */
-			conjS = new double[nSel][datosArt[0].length];
-			conjR = new double[nSel][datosArt[0].length];
-			conjN = new int[nSel][datosArt[0].length];
-			conjM = new boolean[nSel][datosArt[0].length];
-			clasesS = new int[nSel];
-			h = 0;
-			for (i = 0, l = 0; i < nNeg; i++, h++) {
-				for (; clasesArt[h] == posID && h < clasesArt.length; h++)
-					;
-				if (poblacion[0].getGen(i)) { // the instance must be copied to
-					// the solution
-					for (j = 0; j < datosArt[h].length; j++) {
-						conjS[l][j] = datosArt[h][j];
-						conjR[l][j] = realArt[h][j];
-						conjN[l][j] = nominalArt[h][j];
-						conjM[l][j] = nulosArt[h][j];
-					}
-					clasesS[l] = clasesArt[h];
-					l++;
-				}
+		Arrays.sort(poblacionMaj);
+		Arrays.sort(poblacionMinor);
+		int Nmaj = 0;				
+		for (i = 0; i < nNeg; i++) {
+			if (poblacionMaj[0].getGen(i)) { // the instance must be copied to
+				Nmaj++;
 			}
-			for (i = 0; i < datosArt.length; i++) {
-				if (clasesArt[i] == posID) {
-					for (j = 0; j < datosArt[i].length; j++) {
-						conjS[l][j] = datosArt[i][j];
-						conjR[l][j] = realArt[i][j];
-						conjN[l][j] = nominalArt[i][j];
-						conjM[l][j] = nulosArt[i][j];
-					}
-					clasesS[l] = clasesArt[i];
-					l++;
-				}
-			}
-		} else {
-			int Nmaj = 0;				
-			for (i = 0; i < nNeg; i++) {
-				if (poblacion[0].getGen(i)) { // the instance must be copied to
-					Nmaj++;
-				}
-			}
-			
-			nSel = Nmaj + nPosOri + poblacion[0].smoteTotal ;//real???
-			System.out.println( "0000000nSel:"+nSel+" Nmaj:"+Nmaj+" nPos:"+nPos+" smoteTotal:"+poblacion[0].smoteTotal);
-			
-			/* Construction of S set from the best cromosome */
-			conjS = new double[nSel][datosArt[0].length];
-			conjR = new double[nSel][datosArt[0].length];
-			conjN = new int[nSel][datosArt[0].length];
-			conjM = new boolean[nSel][datosArt[0].length];
-			clasesS = new int[nSel];
-			
-			for (i = 0, l = 0; i < datosArt.length; i++) {
-				if ((clasesArt[i]==negID && poblacion[0].getGen(i))) { // the instance must be copied to
-					// the solution
-					for (j = 0; j < datosArt[i].length; j++) {
-						conjS[l][j] = datosArt[i][j];
-						conjR[l][j] = realArt[i][j];
-						conjN[l][j] = nominalArt[i][j];
-						conjM[l][j] = nulosArt[i][j];
-					}
-					clasesS[l] = clasesArt[i];
-					l++;
-				}
-			}
-			for(i = 0; i<clasesTrain.length; i++){
-				if(clasesTrain[i] == posID){
-					for (j = 0; j < datosTrain[i].length; j++) {
-						conjS[l][j] = datosTrain[i][j];
-						conjR[l][j] = realTrain[i][j];
-						conjN[l][j] = nominalTrain[i][j];
-						conjM[l][j] = nulosTrain[i][j];
-					}
-					clasesS[l] = clasesTrain[i];
-					l++;
-				}
-			}
-			for (i = 0; i < poblacion[0].smoteTotal; i++) {
+		}
+		nSel = Nmaj + nPos + poblacionMinor[0].getnSmote() ;//real???
+		System.out.println( "0000000nSel:"+nSel+" Nmaj:"+Nmaj+" nPos:"+nPos+" smoteTotal:"+eliteMinor[0].smoteTotal);
+		
+		/* Construction of S set from the best cromosome */
+		conjS = new double[nSel][datosArt[0].length];
+		conjR = new double[nSel][datosArt[0].length];
+		conjN = new int[nSel][datosArt[0].length];
+		conjM = new boolean[nSel][datosArt[0].length];
+		clasesS = new int[nSel];
+		
+		for (i = 0, l = 0; i < datosArt.length; i++) {
+			if ( (i<poblacionMaj[0].geneBit.length&& poblacionMaj[0].getGen(i)) || clasesArt[i] == posID) { // the instance must be copied to
 				// the solution
-				for (j = 0; j < poblacion[0].smoteDatosArt[i].length; j++) {
-					conjS[l][j] = poblacion[0].smoteDatosArt[i][j];
-					conjR[l][j] = poblacion[0].smoteRealArt[i][j];
-					conjN[l][j] = poblacion[0].smoteNominalArt[i][j];
-					conjM[l][j] = poblacion[0].smoteNulosArt[i][j];
+				for (j = 0; j < datosArt[i].length; j++) {
+					conjS[l][j] = datosArt[i][j];
+					conjR[l][j] = realArt[i][j];
+					conjN[l][j] = nominalArt[i][j];
+					conjM[l][j] = nulosArt[i][j];
 				}
-				clasesS[l] = poblacion[0].smoteClassS[i];
-				l++;				
+				clasesS[l] = clasesArt[i];
+				l++;
 			}
 		}
-
-
+		for (i = 0; i < poblacionMinor[0].getnSmote(); i++) {
+			// the solution
+			for (j = 0; j < poblacionMinor[0].smoteDatosArt[i].length; j++) {
+				conjS[l][j] = poblacionMinor[0].smoteDatosArt[i][j];
+				conjR[l][j] = poblacionMinor[0].smoteRealArt[i][j];
+				conjN[l][j] = poblacionMinor[0].smoteNominalArt[i][j];
+				conjM[l][j] = poblacionMinor[0].smoteNulosArt[i][j];
+			}
+			clasesS[l] = poblacionMinor[0].smoteClassS[i];
+			l++;				
+		}
+		
 		/*
 		 * for (i = 0; i < poblacion.length; i++){ for (j = 0; j <
 		 * poblacion[0].cuerpo.length; j++){
 		 * System.out.print((poblacion[i].cuerpo[j] ? 1 : 0)); }
 		 * System.out.println(" Calidad: " + poblacion[i].calidad); }
 		 */
-		best = poblacion[0].cuerpo.clone();
-		bestOutputs = poblacion[0].prediction.clone();
+		bestMaj = poblacionMaj[0].geneBit.clone();
+		bestMinor = poblacionMinor[0].geneBit.clone();
+		bestOutputs = poblacionMaj[0].prediction.clone();
 		System.out
 		.println("QstatEUSCHC " + relation + " "
 				+ (double) (System.currentTimeMillis() - tiempo)
@@ -522,58 +499,17 @@ public class EOEUSCHCQstat extends Metodo {
 		// OutputIS.escribeSalida(ficheroSalida[1], test, entradas, salida,
 		// nEntradas, relation);
 	}
-
 	/**
-	 * run a hierarchical cluster to find the positives clusters
-	 */
-	private void calcLocalInfo(double[][] datosTrain, double[][] realTrain, int[][] nominalTrain,
-			boolean[][] nulosTrain, int[] clasesTrain, int nNeg, int posID, int negID) {
-
-		/*
-		 * number negtive all in this set 
-		 * kSMOTE how many majsamples near a minor*/
-		/*Localize the positive instances*/
-		int nPos = datosTrain.length - nNeg;
-		this.minorCluster = new int[datosTrain.length];
-	    int positives[];
-	    int i, j;
-	    positives = new int[nPos];
-	    for (i=0, j=0; i<clasesTrain.length; i++) {
-	      if (clasesTrain[i] == posID) {
-	        positives[j] = i;
-	        j++;
-	      }
-	    }
-	    double posPoints[][] = new double[nPos][datosTrain[0].length];
-	    for(i=0; i<positives.length; i++){
-	    	for(j=0; j<datosTrain[i].length; j++)
-	    		posPoints[i][j] = datosTrain[positives[i]][j]; //realTrain
-	    }
-	    HierarchicalClustering hc = new HierarchicalClustering();
-	    int posCs[] = new int[posPoints.length];
-	    hc.HClustering(posPoints, posCs, this.cp);
-	    for(i=0; i<positives.length; i++){
-	    	this.minorCluster[positives[i]] = positives[posCs[i]];
-	    }
-	}
-	/**
-	 * Function that determines the cromosomes who have to be crossed and the
-	 * other ones who have to be removed It returns the number of remaining
-	 * cromosomes in the poblation
-	 */
-	private int recombinar(EOChromosome C[], int d, int nNeg, int nPos,
-			boolean majSelection) {
+	 * Given the parent and d CHC return newpro
+	 * @param d the threshold of recombination
+	 * */
+	
+	private int recombinar(BaseChro C[], int d) {
 
 		int i, j;
 		int distHamming;
 		int tamC = 0;
-		int n;
-
-		if (majSelection)
-			n = nNeg;
-		else
-			n = nNeg + nPos * bitWidth;
-
+		int n = C[0].geneBit.length;
 		for (i = 0; i < C.length / 2; i++) {
 			distHamming = 0;
 			for (j = 0; j < n; j++)
@@ -886,9 +822,5 @@ public class EOEUSCHCQstat extends Metodo {
 		nEvaluation = Integer.parseInt(param.getParameter(i++));
 		cp = Double.parseDouble(param.getParameter(i++));
 		bitWidth = Integer.parseInt(param.getParameter(i++));
-		if (param.getParameter(i++).equalsIgnoreCase("TRUE"))
-			bLineMode = true;
-		else
-			bLineMode = false;
 	}
 }
