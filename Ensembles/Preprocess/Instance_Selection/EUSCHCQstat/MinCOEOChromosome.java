@@ -22,6 +22,7 @@ public class MinCOEOChromosome extends  BaseChro {
 	boolean smoteNulosArt[][];
 	int smoteClassS[];
 	int kN;
+	static int minorCluster[];
 	public MinCOEOChromosome (int size) {		
 		double u;
 		int i;
@@ -78,12 +79,23 @@ public class MinCOEOChromosome extends  BaseChro {
 		return smoteTotal;
 	}
 	/* smote select positive sample with special nsmote*/
-	public int smoteEOU(double datosTrain[][], double realTrain[][], int nominalTrain[][], boolean nulosTrain[][], int clasesTrain[],
+	public int smoteEOU(
+			double datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[],
+			double train[][], double trainR[][], int trainN[][], boolean trainM[][], int clasesT[],
+			//double datosTrain[][], double realTrain[][], int nominalTrain[][], boolean nulosTrain[][], int clasesTrain[],
 			int kSMOTE, int smoteN[], int nPos, int posID, int nNeg, int negID, boolean distanceEu,
 			 keel.Dataset.Attribute entradas[]){
 		int i, j, k, h, m;
 		int neighbors[][];
 		int nSelPos = 0;
+		int posIndex [] = new int[clases.length];
+		j = 0;
+		for (i = 0; i<clases.length; i++) {
+			if (clases[i] == posID) {
+				posIndex[i] = j;
+				j++;
+			}
+		}
 		for(i=0; i<smoteN.length; i++)
 		{
 			if(smoteN[i]>0)
@@ -102,11 +114,9 @@ public class MinCOEOChromosome extends  BaseChro {
 		neighbors = new int[nSelPos][kSMOTE];
 		for (i = 0, j = 0; i < smoteN.length; i++) {
 			if(smoteN[i]>0){
-				EUSCHCQstat.evaluacionKNNClass(kSMOTE, datosTrain, realTrain, nominalTrain,
-							nulosTrain, clasesTrain, datosTrain[i+nNeg],
-							realTrain[i+nNeg], nominalTrain[i+nNeg],
-							nulosTrain[i+nNeg], Math.max(posID, negID) + 1,
-							distanceEu, neighbors[j], posID);
+				EUSCHCQstat.evaluacionKNNClass(kSMOTE, datos, real, nominal, nulos, clases,
+							train[i+nNeg],	trainR[i+nNeg], trainN[i+nNeg], trainM[i+nNeg], 
+							Math.max(posID, negID) + 1, distanceEu, neighbors[j], posID);
 				j ++;
 			}
 		}
@@ -117,9 +127,8 @@ public class MinCOEOChromosome extends  BaseChro {
 			if(smoteN[i]>0)
 			{
 				h = 0;
-				
 				for(k=0; k<kSMOTE; k++){
-					if(neighbors[j][k]!=-1){
+					if(neighbors[j][k]!=-1&& minorCluster[posIndex[neighbors[j][k]]] == minorCluster[i]){
 						neighbors[j][h] = neighbors[j][k];
 						h ++;
 					}
@@ -128,20 +137,20 @@ public class MinCOEOChromosome extends  BaseChro {
 					smoteClassS[l] = posID;
 					nn = Randomize.Randint(0, h);
 					if(h>0){
-						interpola(realTrain[i+nNeg],
-							realTrain[neighbors[j][nn]],
-							nominalTrain[i+nNeg],
-							nominalTrain[neighbors[j][nn]],
-							nulosTrain[i+nNeg],
-							nulosTrain[neighbors[j][nn]], 
+						interpola(trainR[i+nNeg],
+								real[neighbors[j][nn]],
+								trainN[i+nNeg],
+								nominal[neighbors[j][nn]],
+								trainM[i+nNeg],
+								nulos[neighbors[j][nn]], 
 							smoteDatosArt[l], smoteRealArt[l], 
 							smoteNominalArt[l], smoteNulosArt[l], entradas);
 					}else{
-						for(m=0; m<realTrain[i+nNeg].length; m++){
-							smoteDatosArt[l][m] = datosTrain[i+nNeg][m];
-							smoteRealArt[l][m] = realTrain[i+nNeg][m]; 
-							smoteNominalArt[l][m] = nominalTrain[i+nNeg][m];
-							smoteNulosArt[l][m] = nulosTrain[i+nNeg][m];
+						for(m=0; m<trainR[i+nNeg].length; m++){
+							smoteDatosArt[l][m] = train[i+nNeg][m];
+							smoteRealArt[l][m] = trainR[i+nNeg][m]; 
+							smoteNominalArt[l][m] = trainN[i+nNeg][m];
+							smoteNulosArt[l][m] = trainM[i+nNeg][m];
 						}
 						
 					}
@@ -226,7 +235,7 @@ public class MinCOEOChromosome extends  BaseChro {
 		int smoteN[] = new int[nPos];
 		int nSelectNeg = 0;
 		double tempFitness[];
-		prediction = new boolean[train.length];
+		prediction = new boolean[datos.length];
 
 		smoteTotal = 0;
 		kN = 5;
@@ -253,7 +262,9 @@ public class MinCOEOChromosome extends  BaseChro {
 		smoteNominalArt = new int[smoteTotal][train[0].length];
 		smoteNulosArt =  new boolean[smoteTotal][train[0].length];
 		smoteClassS = new int[smoteTotal];
-		smoteTotal = smoteEOU(train, trainR, trainN, trainM, clasesT, 
+		smoteTotal = smoteEOU(
+				datos, real, nominal, nulos, clases,
+				train, trainR, trainN, trainM, clasesT, 
 				kN, smoteN, nPos, posID, nNeg, negID, distanceEu, entradas);
 		
 		tempFitness = new double[elite.length];
@@ -263,6 +274,7 @@ public class MinCOEOChromosome extends  BaseChro {
 				if(elite[k].getGen(i) == true)
 					nSelectNeg ++;
 			}
+			nPos = datos.length - nNeg;
 			s = smoteTotal + nPos + nSelectNeg;				
 			vecinos = new int[K];	        
 			conjS = new double[s][train[0].length];
@@ -284,15 +296,18 @@ public class MinCOEOChromosome extends  BaseChro {
 					l++;
 				}
 			}
-			for (m=nNeg; m<train.length; m++) { // positives
-				for (j=0; j<train[m].length; j++) {
-					conjS[l][j] = train[m][j];
-					conjR[l][j] = trainR[m][j];
-					conjN[l][j] = trainN[m][j];
-					conjM[l][j] = trainM[m][j];
+			//datos[][], double real[][], int nominal[][], boolean nulos[][], int clases[],
+			for (m=0; m<datos.length; m++) { // positives
+				if (clases[m] == posID) {
+					for (j=0; j<datos[m].length; j++) {
+						conjS[l][j] = datos[m][j];
+						conjR[l][j] = real[m][j];
+						conjN[l][j] = nominal[m][j];
+						conjM[l][j] = nulos[m][j];
+					}
+					clasesS[l] = clases[m];
+					l++;
 				}
-				clasesS[l] = clasesT[m];
-				l++;
 			}
 			for (m=0; m<smoteTotal; m++) { // positives
 				for (j=0; j<smoteDatosArt[m].length; j++) {

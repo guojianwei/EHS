@@ -89,9 +89,9 @@ public class MCOEOEUSCHCQstat extends Metodo {
 	private String wrapper;
 	private boolean anterioresMaj[][], anterioresMinor[][],salidasAnteriores[][];
 	private boolean[] bestMaj, bestMinor, bestOutputs;
-	private int minorCluster[];
 	private int nEvaluation, bitWidth;
 	private double cp,p;
+	private boolean bLineMode;
 
 	/**
 	 * Builder with a script file (configuration file)
@@ -119,7 +119,73 @@ public class MCOEOEUSCHCQstat extends Metodo {
 	public boolean[] getBestOutputs() {
 		return bestOutputs;
 	}
-	
+	public int borderLine(boolean [] isBorder, int nPos, int posID, int nNeg, int negID){
+		int i, j, k, nres = 0, cnt;
+		int [][]neighbors = new int[nPos][kSMOTE];
+		for (i = 0, j = 0; i < datosTrain.length; i++) {
+			if(clasesTrain[i] == posID){
+				KNN.evaluacionKNN2(kSMOTE, datosTrain, realTrain, nominalTrain, nulosTrain, clasesTrain, 
+						 datosTrain[i],	realTrain[i], nominalTrain[i], nulosTrain[i], 
+						Math.max(posID, negID) + 1, distanceEu, neighbors[j]);
+				cnt = 0;
+				for(k=0; k<kSMOTE; k++){
+					if(clasesTrain[neighbors[j][k]] == negID){
+						cnt ++;
+					}
+				}
+				if(cnt>=kSMOTE/2 && cnt<kSMOTE){
+					isBorder[i] = true;
+					nres ++;
+				}
+				j ++;
+			}
+		}
+		
+		return nres;
+	}
+	private void calcLocalInfo(double[][] datos, double[][] real, int[][] nominal,
+			boolean[][] nulos, int[] clases, 	int nNeg, int posID, int negID, int [] minorCluster) {
+		int nPos = datos.length - nNeg;
+	    int i, j;
+	    if(this.cp <= 1) {
+			for(i = 0; i < minorCluster.length; i++) {
+				minorCluster[i] = 0;
+			}
+			return ;
+		}
+	    int positives[] = new int[nPos]; // index -> posindex
+	    for (i=0, j=0; i<clases.length; i++) {
+	      if (clases[i] == posID) {
+	        positives[j] = i;
+	        j++;
+	      }
+	    }
+	    double posPoints[][] = new double[nPos][datos[0].length];
+	    for(i=0; i<positives.length; i++){
+	    	for(j=0; j<datos[i].length; j++)
+	    		posPoints[i][j] = datos[positives[i]][j]; //realTrain
+	    }
+	    //int posCs[] = new int[posPoints.length];
+
+	    /* use Kmeans to find the cluster of minority class*/
+	    /*
+	    Randomize rand = new Randomize();
+		long tl = 1286082570;
+		rand.setSeed(tl);
+		*/
+		ClusterKMeans tmpkm = new ClusterKMeans();
+		tmpkm.clsByKmeans(posPoints, (int)this.cp, minorCluster);
+		System.out.println(0);
+		/*
+	    HierarchicalClustering hc = new HierarchicalClustering();
+	    hc.HClustering(posPoints, posCs,this.cp); //positives[posCs[i]];
+	    */
+		/*
+	    for(i=0; i<positives.length; i++){
+	    	minorCluster[positives[i]] = posCs[i];
+	    }
+	    */
+	}
 	private BaseChro[] recombination(BaseChro parent[], BaseChro C[], int d, int[] tamC,int []ev, int indice){
 		/* Selection(r) of C(t) from P(t) */
 		int i,l, tmp, pos;
@@ -257,12 +323,17 @@ public class MCOEOEUSCHCQstat extends Metodo {
 		// posID, negID, nPos, nNeg //Arts are sample, trains are original
 		if (hybrid.equalsIgnoreCase("ehs")) {
 			/*
+			 * data sets by Art: different from Train(is original); are data will be select
 			 * negtive sample as left, positive right*/
-			datosArt = new double[datosTrain.length][datosTrain[0].length];
-			realArt = new double[datosTrain.length][datosTrain[0].length];
-			nominalArt = new int[datosTrain.length][datosTrain[0].length];
-			nulosArt = new boolean[datosTrain.length][datosTrain[0].length];
-			clasesArt = new int[clasesTrain.length];
+			boolean isBorder[] = new boolean[datosTrain.length];
+			int nArt = datosTrain.length;
+			if(bLineMode)
+				nArt = borderLine(isBorder, nPos, posID, nNeg, negID) + nNeg;
+			datosArt = new double[nArt][datosTrain[0].length];
+			realArt = new double[nArt][datosTrain[0].length];
+			nominalArt = new int[nArt][datosTrain[0].length];
+			nulosArt = new boolean[nArt][datosTrain[0].length];
+			clasesArt = new int[nArt];
 			l = 0;
 			for (i = 0; i < datosTrain.length; i++) {
 				if(clasesTrain[i] == negID){
@@ -277,7 +348,7 @@ public class MCOEOEUSCHCQstat extends Metodo {
 				}
 			}
 			for (i = 0; i < datosTrain.length; i++) {
-				if(clasesTrain[i] == posID){
+				if( (clasesTrain[i] == posID &&(!bLineMode))||(bLineMode && isBorder[i])){
 					for (j = 0; j < datosTrain[i].length; j++) {
 						datosArt[l][j] = datosTrain[i][j];
 						realArt[l][j] = realTrain[i][j];
@@ -304,6 +375,19 @@ public class MCOEOEUSCHCQstat extends Metodo {
 				clasesArt[i] = clasesTrain[i];
 			}
 		}
+		int nPosOri = nPos;
+		int nNegOri = nNeg;
+		/* Count of number of positive and negative examples */
+		nPos = nNeg = 0;
+		for (i = 0; i < clasesArt.length; i++) {
+			if (clasesArt[i] == posID)
+				nPos++;
+			else
+				nNeg++;
+		}
+		MinCOEOChromosome.minorCluster = new int[nPos];
+		calcLocalInfo(datosArt, realArt, nominalArt, nulosArt, clasesArt, nNeg, posID, negID, MinCOEOChromosome.minorCluster );
+
 		
 		chromeSizeMaj = nNeg;
 		chromeSizeMinor = nPos*bitWidth;
@@ -822,5 +906,9 @@ public class MCOEOEUSCHCQstat extends Metodo {
 		nEvaluation = Integer.parseInt(param.getParameter(i++));
 		cp = Double.parseDouble(param.getParameter(i++));
 		bitWidth = Integer.parseInt(param.getParameter(i++));
+		if (param.getParameter(i++).equalsIgnoreCase("True"))
+			bLineMode = true;
+		else
+			bLineMode = false;
 	}
 }

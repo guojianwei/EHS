@@ -705,7 +705,12 @@ class Ensemble {
     	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(9));
     	  double p = Double.parseDouble(classifier.parameters.getParameter(10));
     	  double Cp = Double.parseDouble(classifier.parameters.getParameter(11));
-    	  String borderLine = classifier.parameters.getParameter(12);
+    	  String borderLine;
+    	  try {
+    		  borderLine = classifier.parameters.getParameter(12);
+    	  } catch (Exception e) {
+    		  borderLine = "False";
+    	  }
 
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
@@ -769,10 +774,9 @@ class Ensemble {
     	  System.out.println("---------------INEOEUSBOOST-----------------------------------------------------");
     	  double p = 0; //not used //Double.parseDouble(classifier.parameters.getParameter(8));
     	  int nEvaluation = Integer.parseInt(classifier.parameters.getParameter(8));
-    	  double Cp = 0; //not used //Double.parseDouble(classifier.parameters.getParameter(10));
     	  int bitWidth = Integer.parseInt(classifier.parameters.getParameter(9));
-    	  String borderLine = "False";//classifier.parameters.getParameter(12);
-    	  
+    	  double Cp = Double.parseDouble(classifier.parameters.getParameter(10));
+    	  String borderLine = "False";//classifier.parameters.getParameter
     	  Files.writeFile(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) + "training2.txt", originalDS.printDataSet());
           Metodo m = null;
           createConf_EHS(multi_C45.outputTr.substring(0,multi_C45.outputTr.length()-4) +"EUB_M_GMConf.txt", 

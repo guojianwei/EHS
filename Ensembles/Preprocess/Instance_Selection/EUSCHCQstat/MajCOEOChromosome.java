@@ -79,7 +79,7 @@ public class MajCOEOChromosome extends  BaseChro {
 		int nSelectNeg = 0;
 		int smoteTotal;
 		double tempFitness[];
-		prediction = new boolean[train.length];
+		prediction = new boolean[datos.length];
 		for(i=0; i<nNeg; i++){
 			if(geneBit[i] == true)
 				nSelectNeg ++;
@@ -94,6 +94,7 @@ public class MajCOEOChromosome extends  BaseChro {
 		
 		vecinos = new int[K];
 		tempFitness = new double[elite.length];
+		nPos = datos.length - nNeg;
 		for(k=0; k<elite.length; k++){
 			smoteTotal = elite[k].getnSmote();
 			s = smoteTotal + nPos + nSelectNeg;
@@ -115,15 +116,17 @@ public class MajCOEOChromosome extends  BaseChro {
 					l++;
 				}
 			}
-			for (m=nNeg; m<train.length; m++) { // positives
-				for (j=0; j<train[m].length; j++) {
-					conjS[l][j] = train[m][j];
-					conjR[l][j] = trainR[m][j];
-					conjN[l][j] = trainN[m][j];
-					conjM[l][j] = trainM[m][j];
+			for (m=0; m<datos.length; m++) { // positives
+				if (clases[m] == posID) {
+					for (j=0; j<datos[m].length; j++) {
+						conjS[l][j] = datos[m][j];
+						conjR[l][j] = real[m][j];
+						conjN[l][j] = nominal[m][j];
+						conjM[l][j] = nulos[m][j];
+					}
+					clasesS[l] = clases[m];
+					l++;
 				}
-				clasesS[l] = clasesT[m];
-				l++;
 			}
 			for (m=0; m<smoteTotal; m++) { // positives
 				for (j=0; j<elite[k].smoteDatosArt[m].length; j++) {
